@@ -24,7 +24,6 @@ def test_segment_table_unknown_index(segment_table: SegmentTable):
 
 @pytest.mark.parametrize("entries", [1])
 def test_segment_table_known(segment_table: SegmentTable):
-
     with patch("dissect.executable.elf.elf.Segment") as mocked_segment:
         assert segment_table[0] == mocked_segment.from_segment_table.return_value
 

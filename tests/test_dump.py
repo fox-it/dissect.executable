@@ -12,7 +12,6 @@ from dissect.executable import ELF
     ["hello_world.out", "hello_world.stripped.out"],
 )
 def test_dump(tmp_path: Path, file_name: str):
-
     output_path = tmp_path / "output"
     input_path = data_file(file_name)
 
