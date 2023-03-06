@@ -3,5 +3,5 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs: 
   ci:
-    uses: fox-it/dissect-workflow-templates/.github/workflows/dissect-ci-template.yml@main
+    uses: fox-it/dissect-workflow-templates/.github/workflows/dissect-ci-template.yml@feature/dis-1750_tox4-and-pure-pyproject
     secrets: inherit
