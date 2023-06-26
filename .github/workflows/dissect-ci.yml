@@ -5,6 +5,7 @@ jobs:
   ci:
     uses: fox-it/dissect-workflow-templates/.github/workflows/dissect-ci-template.yml@main
     secrets: inherit
+
   publish:
     if: ${{ github.ref_name == 'main' || github.ref_type == 'tag' }}
     needs: [ci]
