@@ -321,7 +321,7 @@ class StringTable(Section):
     def __init__(self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64):
         super().__init__(fh, idx, c_elf)
 
-        self._get_string = lru_cache(self._get_string)
+        self._get_string = lru_cache(256)(self._get_string)
 
     def __getitem__(self, offset: int) -> str:
         return self._get_string(offset)
