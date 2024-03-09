@@ -306,21 +306,21 @@ typedef struct IMAGE_IMPORT_BY_NAME {
 };
 
 typedef struct IMAGE_THUNK_DATA32 {
-	union {
-		DWORD ForwarderString;
-		DWORD Function;
-		DWORD Ordinal;
-		DWORD AddressOfData;
-	} u1;
+    union {
+        DWORD ForwarderString;
+        DWORD Function;
+        DWORD Ordinal;
+        DWORD AddressOfData;
+    } u1;
 };
 
 typedef struct IMAGE_THUNK_DATA64 {
-	union {
-		ULONGLONG ForwarderString;
-		ULONGLONG Function;
-		ULONGLONG Ordinal;
-		ULONGLONG AddressOfData;
-	} u1;
+    union {
+        ULONGLONG ForwarderString;
+        ULONGLONG Function;
+        ULONGLONG Ordinal;
+        ULONGLONG AddressOfData;
+    } u1;
 }
 
 // --- END OF IMPORTS
