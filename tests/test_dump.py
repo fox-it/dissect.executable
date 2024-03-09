@@ -2,7 +2,7 @@ import filecmp
 from pathlib import Path
 
 import pytest
-from util import data_file
+from .util import data_file
 
 from dissect.executable import ELF
 
