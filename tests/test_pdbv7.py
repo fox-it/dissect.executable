@@ -113,7 +113,7 @@ def test_pdb7_pdb_cstruct_typedefs():
     pdb_file = PDB(pdb_file="tests/data/testpdb_x64.pdb")
     pdb_cstruct = pdb_file.pdb.typedefs
 
-    assert len(pdb_cstruct.typedefs) == 543
+    assert len(pdb_cstruct.typedefs) == 545
     assert "simple_datatypes_struct" in pdb_cstruct.typedefs
     assert "windows_datatypes_struct" in pdb_cstruct.typedefs
 
