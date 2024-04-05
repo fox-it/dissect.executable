@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import os
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, BinaryIO, Iterable, Tuple
@@ -15,7 +14,7 @@ from dissect.executable.pdb.helpers.c_pdb import (
     POINTER_TYPES,
     c_pdb,
 )
-from dissect.executable.pdb.helpers.exception import TPIShortEntry, UnknownTPIType
+from dissect.executable.pdb.helpers.exception import UnknownTPIType
 
 if TYPE_CHECKING:
     from dissect.executable.pdb.helpers.pagestream import PageStream
@@ -76,9 +75,6 @@ def skip_numeric(type_data: BinaryIO) -> int:
     try:
         return skip_values[index]
     except KeyError:
-        import ipdb
-
-        ipdb.set_trace()
         return DEFAULT_SKIP
 
 
@@ -151,7 +147,6 @@ class TPI:
 
         if tpi.length <= 2:
             # This seems to happen sporadically but doesn't break the parsing?
-            # raise TPIShortEntry(f"Short entry encountered: {tpi.length} bytes.")
             return
 
         type_data = BytesIO(tpi.type_data)
@@ -203,7 +198,7 @@ class TPI:
         """
 
         # TODO
-        lf_proc = c_pdb.LF_PROCEDURE(kwargs["type_data"])
+        # lf_proc = c_pdb.LF_PROCEDURE(kwargs["type_data"])
         # Better to return as a pointer as this can be parsed in structures
         return self.pdb_cstruct.ptr
 
@@ -218,7 +213,7 @@ class TPI:
         try:
             leaf_type = self._resolve_type(ptr.utype)
         except UnknownTPIType:
-            logging.debug(f"unknown pointer type: 0x{ptr.utype:02x}")
+            print(f"unknown pointer type: 0x{ptr.utype:02x}")
             ptr_type = ptr.attr.ptrtype
             if ptr_type == c_pdb.CV_ptrtype_e.CV_PTR_64:
                 leaf_type = c_pdb.uint64
@@ -235,7 +230,7 @@ class TPI:
         """
 
         # TODO
-        lf_arglist = c_pdb.LF_ARGLIST(kwargs["type_data"])
+        # lf_arglist = c_pdb.LF_ARGLIST(kwargs["type_data"])
         # Better to return as a pointer as this can be parsed in structures
         return self.pdb_cstruct.ptr
 
@@ -294,7 +289,8 @@ class TPI:
                 # logging.debug(f"_parse_lf_fieldlist | leaf_type: {leaf_type} - member: {member}")
                 pass
 
-            # type_data is always 4 bytes aligned, align the data until we encounter another LF_MEMBER/LF_MEMBER_ST leaf type
+            # type_data is always 4 bytes aligned, align the data until we encounter another LF_MEMBER/LF_MEMBER_ST
+            # leaf type
             type_data_pos = (type_data.tell() + 2) % 4
             if type_data_pos != 0:
                 type_data.seek(4 - type_data_pos, os.SEEK_CUR)
@@ -397,14 +393,12 @@ class TPI:
                 try:
                     field_type = self._resolve_type(member_type=member.index)
                 except UnknownTPIType:
-                    """An UnknownType exception can occur when we're parsing a PDB file that wasn't originated by Microsoft.
-                    These user compiled binaries may contain types that are not specified in the Microsoft PDB format.
-                    Set the field type to the respective uint based on the index number when we encounter such a type."""
+                    """An UnknownType exception can occur when we're parsing a PDB file that wasn't originated by
+                    Microsoft. These user compiled binaries may contain types that are not specified in the Microsoft
+                    PDB format. Set the field type to the respective uint based on the index number when we encounter
+                    such a type."""
                     # The 0x1000 range is reserved for 32-bit values
-                    logging.debug(f"UnknownTPIType encountered: 0x{member.index:02x}")
-                    import ipdb
-
-                    ipdb.set_trace()
+                    print(f"UnknownTPIType encountered: 0x{member.index:02x}")
                     if member.index & 0x1000:
                         field_type = c_pdb.uint32
                     else:

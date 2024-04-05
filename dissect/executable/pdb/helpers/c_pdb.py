@@ -894,7 +894,7 @@ enum SYM_ENUM_e : uint16 {
     S_LPROC32_DPC_ID =  0x1156,
     S_DEFRANGE_DPC_PTR_TAG =  0x1157, // DPC pointer tag definition range
     S_DPC_SYM_TAG_MAP = 0x1158, // DPC pointer tag value to symbol record map
-    
+
     S_ARMSWITCHTABLE  = 0x1159,
     S_CALLEES = 0x115a,
     S_CALLERS = 0x115b,
