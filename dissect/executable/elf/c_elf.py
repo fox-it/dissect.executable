@@ -401,14 +401,9 @@ def copy_cstruct(src_struct: cstruct) -> cstruct:
     return dst_struct
 
 
-c_common_elf = cstruct()
-c_common_elf.load(elf_def)
-
-c_elf_32 = copy_cstruct(c_common_elf)
-c_elf_32.load(elf_32_def)
-
-c_elf_64 = copy_cstruct(c_common_elf)
-c_elf_64.load(elf_64_def)
+c_common_elf = cstruct().load(elf_def)
+c_elf_32 = copy_cstruct(c_common_elf).load(elf_32_def)
+c_elf_64 = copy_cstruct(c_common_elf).load(elf_64_def)
 
 PT: IntEnum = c_common_elf.PT
 Elf_Type: IntEnum = c_common_elf.Elf_Type
