@@ -2,9 +2,10 @@ import filecmp
 from pathlib import Path
 
 import pytest
-from util import data_file
 
 from dissect.executable import ELF
+
+from .util import data_file
 
 
 @pytest.mark.parametrize(
