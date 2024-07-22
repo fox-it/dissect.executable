@@ -42,12 +42,12 @@ def test_msi_listdir():
         msi = MSI(fh)
         assert known_directory_entries == [dir_entry for dir_entry in msi.listdir()]
 
-def test_invalid_directory_entry():
+def test_msi_invalid_directory_entry():
     with open("./data/test_msi.msi", "rb") as fh:
         msi = MSI(fh)
         assert isinstance(msi.get("invalid name"), NotFoundError) # OLE.get doesn't raise the error, but returns it
 
-def test_valid_directory_entry():
+def test_msi_valid_directory_entry():
     with open("./data/test_msi.msi", "rb") as fh:
         msi = MSI(fh)
         dir_entry = msi.get("_Registry")
@@ -76,7 +76,7 @@ def test_msi_load_tables():
         msi = MSI(fh)
         assert known_table_names == [table.name for table in msi.get_tables()]
 
-def test_invalid_table():
+def test_msi_invalid_table():
     with open("./data/test_msi.msi", "rb") as fh:
         msi = MSI(fh)
         with pytest.raises(InvalidTable):
@@ -105,7 +105,7 @@ def test_msi_columns():
         assert t.columns[i].name == b'Component_'
         assert t.columns[i].cells[0] == b'MainComponent'
 
-def test_invalid_dump_stream():
+def test_msi_invalid_dump_stream():
     with open("./data/test_msi.msi", "rb") as fh:
         msi = MSI(fh)
         with pytest.raises(NotFoundError):
