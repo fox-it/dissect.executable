@@ -23,7 +23,7 @@ def test_segment_table_unknown_index(segment_table: SegmentTable):
 
 
 @pytest.mark.parametrize("entries", [1])
-def test_segment_table_known(segment_table: SegmentTable):
+def test_segment_table_known(segment_table: SegmentTable) -> None:
     with patch("dissect.executable.elf.elf.Segment") as mocked_segment:
         assert segment_table[0] == mocked_segment.from_segment_table.return_value
 
@@ -32,7 +32,9 @@ def create_segment_table(amount: int, random_data: bytes) -> SegmentTable:
     data_size = len(random_data)
     segments_data = []
     for idx in range(amount):
-        data = c_elf_64.Phdr(p_offset=len(c_elf_64.Phdr) * amount + idx * data_size, p_filesz=data_size).dumps()
+        data = c_elf_64.Phdr(
+            p_offset=len(c_elf_64.Phdr) * amount + idx * data_size, p_filesz=data_size
+        ).dumps()
         segments_data.append(data)
 
     segments_data.append(random_data * amount)
@@ -40,7 +42,7 @@ def create_segment_table(amount: int, random_data: bytes) -> SegmentTable:
     return SegmentTable(segment_data, 0, amount, len(c_elf_64.Phdr))
 
 
-def test_dump_data():
+def test_dump_data() -> None:
     segment_table = create_segment_table(2, b"hello_world")
     segment_table[0].patch(b"new_data")
     data = bytes()
@@ -49,7 +51,7 @@ def test_dump_data():
     assert len(data) == len(b"hello_world" + b"new_data")
 
 
-def test_dump_table():
+def test_dump_table() -> None:
     segment_table = create_segment_table(2, b"hello_world")
     segment_table[0].patch(b"new_data")
     assert len(segment_table.dump_table()[1]) == 2 * len(c_elf_64.Phdr)

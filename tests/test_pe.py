@@ -6,27 +6,35 @@ from dissect.executable.exception import InvalidPE
 from dissect.executable.pe.pe import PE
 
 
-def test_pe_valid_signature():
+def test_pe_valid_signature() -> None:
     with open("tests/data/testexe.exe", "rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
     assert pe._valid() is True
 
 
-def test_pe_invalid_signature():
+def test_pe_invalid_signature() -> None:
     with pytest.raises(InvalidPE):
         PE(BytesIO(b"MZ" + b"\x00" * 400))
 
 
-def test_pe_sections():
-    known_sections = [".dissect", ".text", ".rdata", ".idata", ".rsrc", ".reloc", ".tls"]
+def test_pe_sections() -> None:
+    known_sections = [
+        ".dissect",
+        ".text",
+        ".rdata",
+        ".idata",
+        ".rsrc",
+        ".reloc",
+        ".tls",
+    ]
     with open("tests/data/testexe.exe", "rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
     assert known_sections == [section for section in pe.sections.keys()]
 
 
-def test_pe_imports():
+def test_pe_imports() -> None:
     known_imports = [
         "SHELL32.dll",
         "ole32.dll",
@@ -44,9 +52,15 @@ def test_pe_imports():
     assert known_imports == [import_ for import_ in pe.imports.keys()]
 
 
-def test_pe_exports():
+def test_pe_exports() -> None:
     # Too much export functions to put in a list
-    known_exports = ["1", "2", "CreateOverlayApiInterface", "CreateShadowPlayApiInterface", "ShadowPlayOnSystemStart"]
+    known_exports = [
+        "1",
+        "2",
+        "CreateOverlayApiInterface",
+        "CreateShadowPlayApiInterface",
+        "ShadowPlayOnSystemStart",
+    ]
 
     with open("tests/data/testexe.exe", "rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
@@ -54,7 +68,7 @@ def test_pe_exports():
     assert known_exports == [export_ for export_ in pe.exports.keys()]
 
 
-def test_pe_resources():
+def test_pe_resources() -> None:
     known_resource_types = ["RcData", "Manifest"]
     with open("tests/data/testexe.exe", "rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
@@ -62,15 +76,26 @@ def test_pe_resources():
     assert known_resource_types == [resource for resource in pe.resources.keys()]
 
 
-def test_pe_relocations():
+def test_pe_relocations() -> None:
     with open("tests/data/testexe.exe", "rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
     assert len(pe.relocations) == 9
 
 
-def test_pe_tls_callbacks():
-    known_callbacks = [430080, 434176, 438272, 442368, 446464, 450560, 454656, 458752, 462848, 466944]
+def test_pe_tls_callbacks() -> None:
+    known_callbacks = [
+        430080,
+        434176,
+        438272,
+        442368,
+        446464,
+        450560,
+        454656,
+        458752,
+        462848,
+        466944,
+    ]
 
     with open("tests/data/testexe.exe", "rb") as pe_fh:
         pe = PE(pe_file=pe_fh)

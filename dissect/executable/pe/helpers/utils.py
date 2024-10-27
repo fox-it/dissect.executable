@@ -10,7 +10,11 @@ def align_data(data: bytes, blocksize: int) -> bytes:
     """
 
     needs_alignment = len(data) % blocksize
-    return data if not needs_alignment else data + ((blocksize - needs_alignment) * b"\x00")
+    return (
+        data
+        if not needs_alignment
+        else data + ((blocksize - needs_alignment) * b"\x00")
+    )
 
 
 def align_int(integer: int, blocksize: int) -> int:

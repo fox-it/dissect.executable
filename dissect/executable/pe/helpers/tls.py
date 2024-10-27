@@ -3,8 +3,7 @@ from __future__ import annotations
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-# Local imports
-from dissect.executable.pe.helpers.c_pe import pestruct
+from dissect.executable.pe.c_pe import c_pe
 
 if TYPE_CHECKING:
     from dissect.executable.pe.helpers.sections import PESection
@@ -30,7 +29,9 @@ class TLSManager:
     def parse_tls(self):
         """Parse the TLS directory entry of the PE file when present."""
 
-        tls_data = BytesIO(self.pe.read_image_directory(index=pestruct.IMAGE_DIRECTORY_ENTRY_TLS))
+        tls_data = BytesIO(
+            self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_TLS)
+        )
         self.tls = self.pe.image_tls_directory(tls_data)
 
         self.pe.seek(self.tls.AddressOfCallBacks - self.pe.optional_header.ImageBase)
@@ -73,7 +74,8 @@ class TLSManager:
         """
 
         return self.pe.virtual_read(
-            address=self.tls.StartAddressOfRawData - self.pe.optional_header.ImageBase, size=self.size
+            address=self.tls.StartAddressOfRawData - self.pe.optional_header.ImageBase,
+            size=self.size,
         )
 
     @property
@@ -105,7 +107,9 @@ class TLSManager:
         section_data.write(self.tls.dumps())
 
         # Write the new TLS data to the section
-        start_address_rva = self.tls.StartAddressOfRawData - self.pe.optional_header.ImageBase
+        start_address_rva = (
+            self.tls.StartAddressOfRawData - self.pe.optional_header.ImageBase
+        )
         start_address_section_offset = start_address_rva - self.section.virtual_address
         section_data.seek(start_address_section_offset)
         section_data.write(self._data)

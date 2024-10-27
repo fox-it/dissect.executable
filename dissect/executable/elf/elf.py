@@ -42,7 +42,9 @@ class ELF:
         self.header = self.c_elf.Ehdr(fh)
         self.segments = SegmentTable.from_elf(self)
         self.section_table = SectionTable.from_elf(self)
-        self.symbol_tables: list[SymbolTable] = self.section_table.by_type([SHT.SYMTAB, SHT.DYNSYM])
+        self.symbol_tables: list[SymbolTable] = self.section_table.by_type(
+            [SHT.SYMTAB, SHT.DYNSYM]
+        )
 
     def __repr__(self) -> str:
         return str(self.header)
@@ -98,7 +100,9 @@ class Table(Generic[T]):
 
 
 class Section:
-    def __init__(self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64):
+    def __init__(
+        self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64
+    ):
         self.fh = fh
         self.idx = idx
 
@@ -224,7 +228,9 @@ class SectionTable(Table[Section]):
 
 
 class Segment:
-    def __init__(self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64):
+    def __init__(
+        self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64
+    ):
         self.fh = fh
         self.idx = idx
         self.c_elf = c_elf
@@ -246,7 +252,9 @@ class Segment:
         return repr(self.header)
 
     @classmethod
-    def from_segment_table(cls, table: SegmentTable, idx: Optional[int] = None) -> Segment:
+    def from_segment_table(
+        cls, table: SegmentTable, idx: Optional[int] = None
+    ) -> Segment:
         fh = table.fh
         return cls(fh, idx, table.c_elf)
 
@@ -277,7 +285,14 @@ class Segment:
 
 
 class SegmentTable(Table[Segment]):
-    def __init__(self, fh: BinaryIO, offset: int, entries: int, size: int, c_elf: cstruct = c_elf_64):
+    def __init__(
+        self,
+        fh: BinaryIO,
+        offset: int,
+        entries: int,
+        size: int,
+        c_elf: cstruct = c_elf_64,
+    ):
         super().__init__(entries)
         self.fh = fh
         self.offset = offset
@@ -297,7 +312,9 @@ class SegmentTable(Table[Segment]):
         offset = header.e_phoff
         entries = header.e_phnum
         size = header.e_phentsize
-        return cls(fh=elf.fh, offset=offset, entries=entries, size=size, c_elf=elf.c_elf)
+        return cls(
+            fh=elf.fh, offset=offset, entries=entries, size=size, c_elf=elf.c_elf
+        )
 
     def related_segments(self, section: Section) -> list[Segment]:
         return self.find(lambda x: x.is_related(section))
@@ -318,7 +335,9 @@ class SegmentTable(Table[Segment]):
 
 
 class StringTable(Section):
-    def __init__(self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64):
+    def __init__(
+        self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64
+    ):
         super().__init__(fh, idx, c_elf)
 
         self._get_string = lru_cache(256)(self._get_string)
@@ -333,7 +352,9 @@ class StringTable(Section):
 
 
 class Symbol:
-    def __init__(self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64):
+    def __init__(
+        self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64
+    ):
         self.symbol = c_elf.Sym(fh)
         self.idx = idx
         self.c_elf = c_elf
@@ -388,7 +409,9 @@ class Symbol:
 
 
 class SymbolTable(Section, Table[Symbol]):
-    def __init__(self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64):
+    def __init__(
+        self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64
+    ):
         # Initializes Section info
         Section.__init__(self, fh, idx, c_elf)
         count = self.size // self.entry_size

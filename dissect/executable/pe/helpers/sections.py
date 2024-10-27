@@ -4,10 +4,8 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING
 
 from dissect.executable.exception import BuildSectionException
-
-# Local imports
+from dissect.executable.pe.c_pe import c_pe
 from dissect.executable.pe.helpers import utils
-from dissect.executable.pe.helpers.c_pe import pestruct
 
 if TYPE_CHECKING:
     from dissect.cstruct.cstruct import cstruct
@@ -69,7 +67,9 @@ class PESection:
         """
 
         self.virtual_size = value
-        self.size_of_raw_data = utils.align_int(integer=value, blocksize=self.pe.file_alignment)
+        self.size_of_raw_data = utils.align_int(
+            integer=value, blocksize=self.pe.file_alignment
+        )
 
     @property
     def virtual_address(self) -> int:
@@ -143,8 +143,12 @@ class PESection:
             value: The size of the data.
         """
 
-        self._size_of_raw_data = utils.align_int(integer=value, blocksize=self.pe.file_alignment)
-        self.section.SizeOfRawData = utils.align_int(integer=value, blocksize=self.pe.file_alignment)
+        self._size_of_raw_data = utils.align_int(
+            integer=value, blocksize=self.pe.file_alignment
+        )
+        self.section.SizeOfRawData = utils.align_int(
+            integer=value, blocksize=self.pe.file_alignment
+        )
 
     @property
     def data(self) -> bytes:
@@ -187,8 +191,12 @@ class PESection:
             if section.virtual_address == prev_va:
                 continue
 
-            pointer_to_raw_data = utils.align_int(integer=prev_ptr + prev_size, blocksize=self.pe.file_alignment)
-            virtual_address = utils.align_int(integer=prev_va + prev_vsize, blocksize=self.pe.section_alignment)
+            pointer_to_raw_data = utils.align_int(
+                integer=prev_ptr + prev_size, blocksize=self.pe.file_alignment
+            )
+            virtual_address = utils.align_int(
+                integer=prev_va + prev_vsize, blocksize=self.pe.section_alignment
+            )
 
             if section.virtual_address < virtual_address:
                 """Set the virtual address and raw pointer of the section to the new values, but only do so if the
@@ -242,7 +250,7 @@ def build_section(
     if isinstance(name, str):
         name = name.encode()
 
-    section_header = pestruct.IMAGE_SECTION_HEADER()
+    section_header = c_pe.IMAGE_SECTION_HEADER()
 
     section_header.Name = name + utils.pad(size=8 - len(name))
     section_header.VirtualSize = virtual_size

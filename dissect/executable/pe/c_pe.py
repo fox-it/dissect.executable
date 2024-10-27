@@ -1,6 +1,6 @@
 from dissect.cstruct import cstruct
 
-pe_def = """
+c_pe_def = """
 #define IMAGE_NUMBEROF_DIRECTORY_ENTRIES 16
 #define IMAGE_SIZEOF_SHORT_NAME          8
 
@@ -93,12 +93,12 @@ flag ImageCharacteristics : WORD {
 };
 
 typedef struct IMAGE_FILE_HEADER {
-  MachineType  Machine;
-  WORD  NumberOfSections;
-  DWORD TimeDateStamp;
-  DWORD PointerToSymbolTable;
-  DWORD NumberOfSymbols;
-  WORD  SizeOfOptionalHeader;
+  MachineType           Machine;
+  WORD                  NumberOfSections;
+  DWORD                 TimeDateStamp;
+  DWORD                 PointerToSymbolTable;
+  DWORD                 NumberOfSymbols;
+  WORD                  SizeOfOptionalHeader;
   ImageCharacteristics  Characteristics;
 };
 
@@ -212,9 +212,9 @@ typedef struct IMAGE_NT_HEADERS {
 };
 
 typedef struct IMAGE_NT_HEADERS64 {
-  DWORD                 Signature;
-  IMAGE_FILE_HEADER     FileHeader;
-  IMAGE_OPTIONAL_HEADER64 OptionalHeader;
+  DWORD                     Signature;
+  IMAGE_FILE_HEADER         FileHeader;
+  IMAGE_OPTIONAL_HEADER64   OptionalHeader;
 };
 
 flag SectionFlags : DWORD {
@@ -258,16 +258,16 @@ flag SectionFlags : DWORD {
 };
 
 typedef struct IMAGE_SECTION_HEADER {
-    char    Name[IMAGE_SIZEOF_SHORT_NAME];
-    ULONG   VirtualSize;
-    ULONG   VirtualAddress;
-    ULONG   SizeOfRawData;
-    ULONG   PointerToRawData;
-    ULONG   PointerToRelocations;
-    ULONG   PointerToLinenumbers;
-    USHORT  NumberOfRelocations;
-    USHORT  NumberOfLinenumbers;
-    SectionFlags   Characteristics;
+    char            Name[IMAGE_SIZEOF_SHORT_NAME];
+    ULONG           VirtualSize;
+    ULONG           VirtualAddress;
+    ULONG           SizeOfRawData;
+    ULONG           PointerToRawData;
+    ULONG           PointerToRelocations;
+    ULONG           PointerToLinenumbers;
+    USHORT          NumberOfRelocations;
+    USHORT          NumberOfLinenumbers;
+    SectionFlags    Characteristics;
 };
 
 // --- END OF PE HEADERS
@@ -277,8 +277,8 @@ typedef struct IMAGE_SECTION_HEADER {
 typedef struct IMAGE_EXPORT_DIRECTORY {
     ULONG   Characteristics;
     ULONG   TimeDateStamp;
-    USHORT    MajorVersion;
-    USHORT    MinorVersion;
+    USHORT  MajorVersion;
+    USHORT  MinorVersion;
     ULONG   Name;
     ULONG   Base;
     ULONG   NumberOfFunctions;
@@ -441,12 +441,9 @@ typedef struct _IMAGE_TLS_DIRECTORY64 {
 // --- END OF TLS DIRECTORY
 """
 
+c_pe = cstruct().load(c_pe_def)
 
-pestruct = cstruct()
-pestruct.load(pe_def)
-
-
-cv_info_def = """
+c_cv_info_def = """
 struct GUID {
     DWORD Data1;
     WORD Data2;
@@ -462,5 +459,4 @@ struct CV_INFO_PDB70 {
 };
 """
 
-cv_info_struct = cstruct()
-cv_info_struct.load(cv_info_def)
+c_cv_info = cstruct().load(c_cv_info_def)
