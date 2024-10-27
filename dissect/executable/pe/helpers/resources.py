@@ -5,9 +5,7 @@ from io import BytesIO
 from typing import TYPE_CHECKING, Iterator
 
 from dissect.executable.exception import ResourceException
-
-# Local imports
-from dissect.executable.pe.helpers.c_pe import pestruct
+from dissect.executable.pe.c_pe import c_pe
 
 if TYPE_CHECKING:
     from dissect.cstruct.cstruct import cstruct
@@ -36,8 +34,12 @@ class ResourceManager:
     def parse_rsrc(self):
         """Parse the resource directory entry of the PE file."""
 
-        rsrc_data = BytesIO(self.pe.read_image_directory(index=pestruct.IMAGE_DIRECTORY_ENTRY_RESOURCE))
-        self.resources = self._read_resource(rc_type="_root", data=rsrc_data, offset=0, level=1)
+        rsrc_data = BytesIO(
+            self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_RESOURCE)
+        )
+        self.resources = self._read_resource(
+            rc_type="_root", data=rsrc_data, offset=0, level=1
+        )
 
     def _read_entries(self, data: bytes, directory: cstruct) -> list:
         """Read the entries within the resource directory.
@@ -53,8 +55,10 @@ class ResourceManager:
         entries = []
         for _ in range(0, directory.NumberOfNamedEntries + directory.NumberOfIdEntries):
             entry_offset = data.tell()
-            entry = pestruct.IMAGE_RESOURCE_DIRECTORY_ENTRY(data)
-            self.raw_resources.append({"offset": entry_offset, "entry": entry, "data_offset": entry_offset})
+            entry = c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY(data)
+            self.raw_resources.append(
+                {"offset": entry_offset, "entry": entry, "data_offset": entry_offset}
+            )
             entries.append(entry)
         return entries
 
@@ -70,7 +74,7 @@ class ResourceManager:
         """
 
         data.seek(entry.OffsetToDirectory)
-        data_entry = pestruct.IMAGE_RESOURCE_DATA_ENTRY(data)
+        data_entry = c_pe.IMAGE_RESOURCE_DATA_ENTRY(data)
         self.pe.seek(data_entry.OffsetToData)
         data = self.pe.read(data_entry.Size)
         raw_offset = data_entry.OffsetToData - self.section.virtual_address
@@ -93,7 +97,9 @@ class ResourceManager:
         )
         return rsrc
 
-    def _read_resource(self, data: bytes, offset: int, rc_type: str, level: int = 1) -> dict:
+    def _read_resource(
+        self, data: bytes, offset: int, rc_type: str, level: int = 1
+    ) -> dict:
         """Recursively read the resources within the PE file.
 
         Each resource is added to the dictionary that is available to the user, as well as a list of
@@ -112,28 +118,35 @@ class ResourceManager:
         resource = OrderedDict()
 
         data.seek(offset)
-        directory = pestruct.IMAGE_RESOURCE_DIRECTORY(data)
-        self.raw_resources.append({"offset": offset, "entry": directory, "data_offset": offset})
+        directory = c_pe.IMAGE_RESOURCE_DIRECTORY(data)
+        self.raw_resources.append(
+            {"offset": offset, "entry": directory, "data_offset": offset}
+        )
 
         entries = self._read_entries(data, directory)
 
         for entry in entries:
             if level == 1:
-                rc_type = pestruct.ResourceID(entry.Id).name
+                rc_type = c_pe.ResourceID(entry.Id).name
             else:
                 if entry.NameIsString:
                     data.seek(entry.NameOffset)
-                    name_len = pestruct.uint16(data)
-                    rc_type = pestruct.wchar[name_len](data)
+                    name_len = c_pe.uint16(data)
+                    rc_type = c_pe.wchar[name_len](data)
                 else:
                     rc_type = str(entry.Id)
 
             if entry.DataIsDirectory:
                 resource[rc_type] = self._read_resource(
-                    data=data, offset=entry.OffsetToDirectory, rc_type=rc_type, level=level + 1
+                    data=data,
+                    offset=entry.OffsetToDirectory,
+                    rc_type=rc_type,
+                    level=level + 1,
                 )
             else:
-                resource[rc_type] = self._handle_data_entry(data=data, entry=entry, rc_type=rc_type)
+                resource[rc_type] = self._handle_data_entry(
+                    data=data, entry=entry, rc_type=rc_type
+                )
 
         return resource
 
@@ -234,7 +247,9 @@ class ResourceManager:
         new_size = 0
         section_data = b""
 
-        for idx, resource in enumerate(self.parse_resources(resources=self.pe.resources)):
+        for idx, resource in enumerate(
+            self.parse_resources(resources=self.pe.resources)
+        ):
             if idx == 0:
                 # Use the offset of the first resource to account for the size of the directory header
                 header_size = resource.offset - self.section.virtual_address
@@ -264,7 +279,7 @@ class ResourceManager:
         self.section.data = section_data
 
 
-class Resource(ResourceManager):
+class Resource:
     """Base class representing a resource entry in the PE file.
 
     Args:
@@ -373,7 +388,9 @@ class Resource(ResourceManager):
         prev_offset = 0
         prev_size = 0
 
-        for rsrc_entry in sorted(self.pe.raw_resources, key=lambda rsrc: rsrc["data_offset"]):
+        for rsrc_entry in sorted(
+            self.pe.raw_resources, key=lambda rsrc: rsrc["data_offset"]
+        ):
             entry_offset = rsrc_entry["offset"]
             entry = rsrc_entry["entry"]
 
@@ -409,7 +426,9 @@ class Resource(ResourceManager):
 
         # Update the section data and size
         self.section.data = data
-        self.pe.optional_header.DataDirectory[pestruct.IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = len(data)
+        self.pe.optional_header.DataDirectory[
+            c_pe.IMAGE_DIRECTORY_ENTRY_RESOURCE
+        ].Size = len(data)
 
     def __str__(self) -> str:
         return str(self.name)

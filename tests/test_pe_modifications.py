@@ -3,7 +3,7 @@ from dissect.executable import PE
 from dissect.executable.pe import Patcher
 
 
-def test_add_imports():
+def test_add_imports() -> None:
     dllname = "kusjesvanSRT.dll"
     functions = ["PressButtons", "LooseLips"]
 
@@ -16,12 +16,14 @@ def test_add_imports():
 
         assert "kusjesvanSRT.dll" in new_pe.imports
 
-        custom_dll_imports = [i.name for i in new_pe.imports["kusjesvanSRT.dll"].functions]
+        custom_dll_imports = [
+            i.name for i in new_pe.imports["kusjesvanSRT.dll"].functions
+        ]
         assert "PressButtons" in custom_dll_imports
         assert "LooseLips" in custom_dll_imports
 
 
-def test_resize_section_smaller():
+def test_resize_section_smaller() -> None:
     with open("tests/data/testexe.exe", "rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
@@ -30,28 +32,34 @@ def test_resize_section_smaller():
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build)
 
-        assert new_pe.sections[".text"].size == len(b"kusjesvanSRT, patched with dissect")
+        assert new_pe.sections[".text"].size == len(
+            b"kusjesvanSRT, patched with dissect"
+        )
         assert (
             new_pe.sections[".text"].data[: len(b"kusjesvanSRT, patched with dissect")]
             == b"kusjesvanSRT, patched with dissect"
         )
 
 
-def test_resize_section_bigger():
+def test_resize_section_bigger() -> None:
     with open("tests/data/testexe.exe", "rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
         original_size = pe.sections[".rdata"].size
 
-        pe.patched_sections[".rdata"].data += b"kusjesvanSRT, patched with dissect" * 100
+        pe.patched_sections[".rdata"].data += (
+            b"kusjesvanSRT, patched with dissect" * 100
+        )
 
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build)
 
-        assert new_pe.sections[".rdata"].size == original_size + len(b"kusjesvanSRT, patched with dissect" * 100)
+        assert new_pe.sections[".rdata"].size == original_size + len(
+            b"kusjesvanSRT, patched with dissect" * 100
+        )
 
 
-def test_resize_resource_smaller():
+def test_resize_resource_smaller() -> None:
     with open("tests/data/testexe.exe", "rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
@@ -61,12 +69,12 @@ def test_resize_resource_smaller():
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build)
 
-        assert [patched.data for patched in new_pe.get_resource_type(rsrc_id="Manifest")] == [
-            b"kusjesvanSRT, patched with dissect"
-        ]
+        assert [
+            patched.data for patched in new_pe.get_resource_type(rsrc_id="Manifest")
+        ] == [b"kusjesvanSRT, patched with dissect"]
 
 
-def test_resize_resource_bigger():
+def test_resize_resource_bigger() -> None:
     with open("tests/data/testexe.exe", "rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
@@ -82,7 +90,7 @@ def test_resize_resource_bigger():
         ] == [b"kusjesvanSRT, patched with dissect"]
 
 
-def test_add_section():
+def test_add_section() -> None:
     with open("tests/data/testexe.exe", "rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
         pe.add_section(name=".SRT", data=b"kusjesvanSRT")

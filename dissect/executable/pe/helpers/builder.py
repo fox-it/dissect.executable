@@ -5,17 +5,11 @@ from io import BytesIO
 from typing import TYPE_CHECKING
 
 from dissect.executable.exception import BuildSectionException
+from dissect.executable.pe.c_pe import c_pe
 from dissect.executable.pe.helpers import utils
-from dissect.executable.pe.helpers.c_pe import pestruct
-
-# Local imports
 from dissect.executable.pe.pe import PE
 
-if TYPE_CHECKING:
-    from dissect.cstruct.cstruct import cstruct
-
-
-STUB = b"\x0e\x1f\xba\x0e\x00\xb4\t\xcd!\xb8\x01L\xcd!This program is made with dissect.pe <3 kusjesvanSRT <3.\x0D\x0D\x0A$\x00\x00"  # noqa: E501
+STUB = b"\x0e\x1f\xba\x0e\x00\xb4\t\xcd!\xb8\x01L\xcd!This program is made with dissect.pe <3 kusjesvanSRT <3.\x0d\x0d\x0a$\x00\x00"  # noqa: E501
 
 
 class Builder:
@@ -35,16 +29,16 @@ class Builder:
         subsystem: int = 0x2,
     ):
         self.arch = (
-            pestruct.MachineType.IMAGE_FILE_MACHINE_AMD64
+            c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64
             if arch == "x64"
-            else pestruct.MachineType.IMAGE_FILE_MACHINE_I386
+            else c_pe.MachineType.IMAGE_FILE_MACHINE_I386
         )
         self.dll = dll
         self.subsystem = subsystem
 
         self.pe = None
 
-    def new(self):
+    def new(self) -> None:
         """Build the PE file from scratch.
 
         This function will build a new PE that consists of a single dummy section. It will not contain any imports,
@@ -58,7 +52,9 @@ class Builder:
 
         image_characteristics = self.get_characteristics()
         # Generate the file header
-        self.file_header = self.gen_file_header(machine=self.arch, characteristics=image_characteristics)
+        self.file_header = self.gen_file_header(
+            machine=self.arch, characteristics=image_characteristics
+        )
 
         # Generate the optional header
         self.optional_header = self.gen_optional_header()
@@ -69,17 +65,18 @@ class Builder:
 
         section_header_offset = self.optional_header.SizeOfHeaders
         pointer_to_raw_data = utils.align_int(
-            integer=section_header_offset + pestruct.IMAGE_SECTION_HEADER.size, blocksize=self.file_alignment
+            integer=section_header_offset + c_pe.IMAGE_SECTION_HEADER.size,
+            blocksize=self.file_alignment,
         )
         dummy_section = self.section(
             pointer_to_raw_data=pointer_to_raw_data,
             virtual_address=self.optional_header.BaseOfCode,
             virtual_size=dummy_multiplier,
             raw_size=dummy_multiplier,
-            characteristics=pestruct.SectionFlags.IMAGE_SCN_CNT_CODE
-            | pestruct.SectionFlags.IMAGE_SCN_MEM_EXECUTE
-            | pestruct.SectionFlags.IMAGE_SCN_MEM_READ
-            | pestruct.SectionFlags.IMAGE_SCN_MEM_NOT_PAGED,
+            characteristics=c_pe.SectionFlags.IMAGE_SCN_CNT_CODE
+            | c_pe.SectionFlags.IMAGE_SCN_MEM_EXECUTE
+            | c_pe.SectionFlags.IMAGE_SCN_MEM_READ
+            | c_pe.SectionFlags.IMAGE_SCN_MEM_NOT_PAGED,
         )
         # Update the number of sections in the file header
         self.file_header.NumberOfSections += 1
@@ -125,7 +122,7 @@ class Builder:
         e_oeminfo: int = 0,
         e_res2: int = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         e_lfanew: int = 0,
-    ) -> cstruct:
+    ) -> c_pe.IMAGE_DOS_HEADER:
         """Generate the MZ header for the new PE file.
 
         Args:
@@ -153,7 +150,7 @@ class Builder:
             The MZ header as a `cstruct` object.
         """
 
-        mz_header = pestruct.IMAGE_DOS_HEADER()
+        mz_header = c_pe.IMAGE_DOS_HEADER()
 
         mz_header.e_magic = e_magic
         mz_header.e_cblp = e_cblp
@@ -194,26 +191,14 @@ class Builder:
             The characteristics of the PE file.
         """
 
-        if self.arch == pestruct.MachineType.IMAGE_FILE_MACHINE_AMD64:
-            if self.dll:
-                return (
-                    pestruct.ImageCharacteristics.IMAGE_FILE_EXECUTABLE_IMAGE
-                    | pestruct.ImageCharacteristics.IMAGE_FILE_DLL
-                )
-            else:
-                return pestruct.ImageCharacteristics.IMAGE_FILE_EXECUTABLE_IMAGE
-        else:
-            if self.dll:
-                return (
-                    pestruct.ImageCharacteristics.IMAGE_FILE_EXECUTABLE_IMAGE
-                    | pestruct.ImageCharacteristics.IMAGE_FILE_DLL
-                    | pestruct.ImageCharacteristics.IMAGE_FILE_32BIT_MACHINE
-                )
-            else:
-                return (
-                    pestruct.ImageCharacteristics.IMAGE_FILE_EXECUTABLE_IMAGE
-                    | pestruct.ImageCharacteristics.IMAGE_FILE_32BIT_MACHINE
-                )
+        output = c_pe.ImageCharacteristics.IMAGE_FILE_EXECUTABLE_IMAGE
+        if self.arch != c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64:
+            output |= c_pe.ImageCharacteristics.IMAGE_FILE_32BIT_MACHINE
+
+        if self.dll:
+            output |= c_pe.ImageCharacteristics.IMAGE_FILE_DLL
+
+        return output
 
     def gen_file_header(
         self,
@@ -224,17 +209,17 @@ class Builder:
         characteristics: int = 0,
         machine: int = 0x8664,
         number_of_sections: int = 0,
-    ) -> cstruct:
+    ) -> c_pe.IMAGE_FILE_HEADER:
         """Generate the file header for the new PE file.
 
         Args:
-            machine: The machine type.
-            number_of_sections: The number of sections.
             time_date_stamp: The time and date the file was created.
             pointer_to_symbol_table: The file pointer to the COFF symbol table.
             number_of_symbols: The number of entries in the symbol table.
             size_of_optional_header: The size of the optional header.
             characteristics: The characteristics of the file.
+            machine: The machine type.
+            number_of_sections: The number of sections.
 
         Returns:
             The file header as a `cstruct` object.
@@ -243,17 +228,17 @@ class Builder:
         # Set the size of the optional header if not given
         if not size_of_optional_header:
             if machine == 0x8664:
-                size_of_optional_header = len(pestruct.IMAGE_OPTIONAL_HEADER64)
+                size_of_optional_header = len(c_pe.IMAGE_OPTIONAL_HEADER64)
                 self.machine = 0x8664
             else:
-                size_of_optional_header = len(pestruct.IMAGE_OPTIONAL_HEADER)
+                size_of_optional_header = len(c_pe.IMAGE_OPTIONAL_HEADER)
                 self.machine = 0x14C
 
         # Set the timestamp to now if not given
         if not time_date_stamp:
             time_date_stamp = int(datetime.utcnow().timestamp())
 
-        file_header = pestruct.IMAGE_FILE_HEADER()
+        file_header = c_pe.IMAGE_FILE_HEADER()
         file_header.Machine = machine
         file_header.NumberOfSections = number_of_sections
         file_header.TimeDateStamp = time_date_stamp
@@ -294,12 +279,12 @@ class Builder:
         size_of_heap_reserve: int = 0x1000,
         size_of_heap_commit: int = 0x1000,
         loaderflags: int = 0,
-        number_of_rva_and_sizes: int = pestruct.IMAGE_NUMBEROF_DIRECTORY_ENTRIES,
+        number_of_rva_and_sizes: int = c_pe.IMAGE_NUMBEROF_DIRECTORY_ENTRIES,
         datadirectory: list = [
-            pestruct.IMAGE_DATA_DIRECTORY(BytesIO(b"\x00" * len(pestruct.IMAGE_DATA_DIRECTORY)))
-            for _ in range(pestruct.IMAGE_NUMBEROF_DIRECTORY_ENTRIES)
+            c_pe.IMAGE_DATA_DIRECTORY(BytesIO(b"\x00" * len(c_pe.IMAGE_DATA_DIRECTORY)))
+            for _ in range(c_pe.IMAGE_NUMBEROF_DIRECTORY_ENTRIES)
         ],
-    ) -> cstruct:
+    ) -> c_pe.IMAGE_OPTIONAL_HEADER | c_pe.IMAGE_OPTIONAL_HEADER64:
         """Generate the optional header for the new PE file.
 
         Args:
@@ -339,10 +324,10 @@ class Builder:
         """
 
         if self.machine == 0x8664:
-            optional_header = pestruct.IMAGE_OPTIONAL_HEADER64()
+            optional_header = c_pe.IMAGE_OPTIONAL_HEADER64()
             optional_header.Magic = 0x20B if not magic else magic
         else:
-            optional_header = pestruct.IMAGE_OPTIONAL_HEADER()
+            optional_header = c_pe.IMAGE_OPTIONAL_HEADER()
             optional_header.Magic = 0x10B if not magic else magic
 
         self.file_alignment = file_alignment
@@ -356,7 +341,7 @@ class Builder:
             + len(b"PE\x00\x00")
             + len(self.file_header)
             + len(optional_header)
-            + len(pestruct.IMAGE_SECTION_HEADER),
+            + len(c_pe.IMAGE_SECTION_HEADER),
             blocksize=file_alignment,
         )
 
@@ -404,7 +389,7 @@ class Builder:
         number_of_relocations: int = 0,
         number_of_linenumbers: int = 0,
         characteristics: int = 0x68000020,
-    ) -> cstruct:
+    ) -> c_pe.IMAGE_SECTION_HEADER:
         """Build a new section for the PE.
 
         The default characteristics of the new section will be:
@@ -430,14 +415,18 @@ class Builder:
         """
 
         if len(name) > 8:
-            raise BuildSectionException("section names can't be longer than 8 characters")
+            raise BuildSectionException(
+                "section names can't be longer than 8 characters"
+            )
 
         if isinstance(name, str):
             name = name.encode()
 
-        section_header = pestruct.IMAGE_SECTION_HEADER()
+        section_header = c_pe.IMAGE_SECTION_HEADER()
 
-        pointer_to_raw_data = utils.align_int(integer=pointer_to_raw_data, blocksize=self.file_alignment)
+        pointer_to_raw_data = utils.align_int(
+            integer=pointer_to_raw_data, blocksize=self.file_alignment
+        )
 
         section_header.Name = name + utils.pad(size=8 - len(name))
         section_header.VirtualSize = virtual_size
@@ -463,7 +452,9 @@ class Builder:
             The size of the PE.
         """
 
-        last_section = self.pe.patched_sections[next(reversed(self.pe.patched_sections))]
+        last_section = self.pe.patched_sections[
+            next(reversed(self.pe.patched_sections))
+        ]
         va = last_section.virtual_address
         size = last_section.virtual_size
 

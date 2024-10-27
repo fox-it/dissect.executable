@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import TYPE_CHECKING, BinaryIO, Tuple
 
@@ -12,6 +12,7 @@ from dissect.executable.exception import (
     InvalidVA,
     ResourceException,
 )
+from dissect.executable.pe.c_pe import c_cv_info, c_pe
 from dissect.executable.pe.helpers import (
     exports,
     imports,
@@ -22,9 +23,6 @@ from dissect.executable.pe.helpers import (
     tls,
     utils,
 )
-
-# Local imports
-from dissect.executable.pe.helpers.c_pe import cv_info_struct, pestruct
 
 if TYPE_CHECKING:
     from dissect.cstruct.cstruct import cstruct
@@ -80,7 +78,9 @@ class PE:
 
         self.base_address = self.optional_header.ImageBase
 
-        self.timestamp = datetime.utcfromtimestamp(self.file_header.TimeDateStamp)
+        self.timestamp = datetime.fromtimestamp(
+            self.file_header.TimeDateStamp, tz=timezone.utc
+        )
 
         # Parse the section header
         self.parse_section_header()
@@ -96,7 +96,7 @@ class PE:
         """
 
         self.pe_file.seek(self.mz_header.e_lfanew)
-        return True if pestruct.uint32(self.pe_file) == 0x4550 else False
+        return True if c_pe.uint32(self.pe_file) == 0x4550 else False
 
     def parse_headers(self):
         """Function to parse the basic PE headers:
@@ -111,22 +111,22 @@ class PE:
             InvalidArchitecture if the architecture is not supported or unknown.
         """
 
-        self.mz_header = pestruct.IMAGE_DOS_HEADER(self.pe_file)
+        self.mz_header = c_pe.IMAGE_DOS_HEADER(self.pe_file)
 
         if not self._valid():
             raise InvalidPE("file is not a valid PE file")
 
-        self.file_header = pestruct.IMAGE_FILE_HEADER(self.pe_file)
+        self.file_header = c_pe.IMAGE_FILE_HEADER(self.pe_file)
 
         image_nt_headers_offset = self.mz_header.e_lfanew
         self.pe_file.seek(image_nt_headers_offset)
 
         # Set the architecture specific settings
         self._set_pe_architecture()
-        if self.file_header.Machine == pestruct.MachineType.IMAGE_FILE_MACHINE_AMD64:
-            self.nt_headers = pestruct.IMAGE_NT_HEADERS64(self.pe_file)
+        if self.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64:
+            self.nt_headers = c_pe.IMAGE_NT_HEADERS64(self.pe_file)
         else:
-            self.nt_headers = pestruct.IMAGE_NT_HEADERS(self.pe_file)
+            self.nt_headers = c_pe.IMAGE_NT_HEADERS(self.pe_file)
 
         self.optional_header = self.nt_headers.OptionalHeader
 
@@ -137,18 +137,20 @@ class PE:
             InvalidArchitecture if the architecture is not supported or unknown.
         """
 
-        if self.file_header.Machine == pestruct.MachineType.IMAGE_FILE_MACHINE_AMD64:
-            self.image_thunk_data = pestruct.IMAGE_THUNK_DATA64
-            self.image_tls_directory = pestruct.IMAGE_TLS_DIRECTORY64
+        if self.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64:
+            self.image_thunk_data = c_pe.IMAGE_THUNK_DATA64
+            self.image_tls_directory = c_pe.IMAGE_TLS_DIRECTORY64
             self._high_bit = 1 << 63
-            self.read_address = pestruct.uint64
-        elif self.file_header.Machine == pestruct.MachineType.IMAGE_FILE_MACHINE_I386:
-            self.image_thunk_data = pestruct.IMAGE_THUNK_DATA32
-            self.image_tls_directory = pestruct.IMAGE_TLS_DIRECTORY32
+            self.read_address = c_pe.uint64
+        elif self.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_I386:
+            self.image_thunk_data = c_pe.IMAGE_THUNK_DATA32
+            self.image_tls_directory = c_pe.IMAGE_TLS_DIRECTORY32
             self._high_bit = 1 << 31
-            self.read_address = pestruct.uint32
+            self.read_address = c_pe.uint32
         else:
-            raise InvalidArchitecture(f"Invalid architecture found: {self.file_header.Machine:02x}")
+            raise InvalidArchitecture(
+                f"Invalid architecture found: {self.file_header.Machine:02x}"
+            )
 
     def parse_section_header(self):
         """Parse the sections within the PE file."""
@@ -158,11 +160,15 @@ class PE:
         for _ in range(self.file_header.NumberOfSections):
             # Keep track of the last section offset
             offset = self.pe_file.tell()
-            section_header = pestruct.IMAGE_SECTION_HEADER(self)
+            section_header = c_pe.IMAGE_SECTION_HEADER(self.pe_file)
             section_name = section_header.Name.decode().strip("\x00")
             # Take note of the sections, keep track of any patches seperately
-            self.sections[section_name] = sections.PESection(pe=self, section=section_header, offset=offset)
-            self.patched_sections[section_name] = sections.PESection(pe=self, section=section_header, offset=offset)
+            self.sections[section_name] = sections.PESection(
+                pe=self, section=section_header, offset=offset
+            )
+            self.patched_sections[section_name] = sections.PESection(
+                pe=self, section=section_header, offset=offset
+            )
 
         self.last_section_offset = self.sections[next(reversed(self.sections))].offset
 
@@ -179,7 +185,10 @@ class PE:
 
         if not name:
             for section in self.sections.values():
-                if va in range(section.virtual_address, section.virtual_address + section.virtual_size):
+                if va in range(
+                    section.virtual_address,
+                    section.virtual_address + section.virtual_size,
+                ):
                     return section
         else:
             return self.sections[name]
@@ -197,7 +206,10 @@ class PE:
 
         if not name:
             for section in self.patched_sections.values():
-                if va in range(section.virtual_address, section.virtual_address + section.virtual_size):
+                if va in range(
+                    section.virtual_address,
+                    section.virtual_address + section.virtual_size,
+                ):
                     return section
         else:
             return self.patched_sections[name]
@@ -214,7 +226,10 @@ class PE:
 
         va = self.directory_va(index=index)
         for _, section in self.patched_sections.items():
-            if va >= section.virtual_address and va < section.virtual_address + section.virtual_size:
+            if (
+                va >= section.virtual_address
+                and va < section.virtual_address + section.virtual_size
+            ):
                 return section
 
         raise InvalidVA(f"VA not found in sections: {va:#04x}")
@@ -230,37 +245,40 @@ class PE:
             - Thread Local Storage (TLS) Callbacks
         """
 
-        for idx in range(pestruct.IMAGE_NUMBEROF_DIRECTORY_ENTRIES):
+        for idx in range(c_pe.IMAGE_NUMBEROF_DIRECTORY_ENTRIES):
             if not self.has_directory(index=idx):
                 continue
 
             # Take note of the current directory VA so we can dynamically update it when resizing sections
             section = self.datadirectory_section(index=idx)
-            directory_va_offset = self.optional_header.DataDirectory[idx].VirtualAddress - section.virtual_address
+            directory_va_offset = (
+                self.optional_header.DataDirectory[idx].VirtualAddress
+                - section.virtual_address
+            )
             section.directories[idx] = directory_va_offset
 
             # Parse the Import Address Table (IAT)
-            if idx == pestruct.IMAGE_DIRECTORY_ENTRY_IMPORT:
+            if idx == c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT:
                 self.import_mgr = imports.ImportManager(pe=self, section=section)
                 self.imports = self.import_mgr.imports
 
-            if idx == pestruct.IMAGE_DIRECTORY_ENTRY_EXPORT:
+            if idx == c_pe.IMAGE_DIRECTORY_ENTRY_EXPORT:
                 self.export_mgr = exports.ExportManager(pe=self, section=section)
                 self.exports = self.export_mgr.exports
 
             # Parse the resources directory entry of the PE file
-            if idx == pestruct.IMAGE_DIRECTORY_ENTRY_RESOURCE:
+            if idx == c_pe.IMAGE_DIRECTORY_ENTRY_RESOURCE:
                 self.rsrc_mgr = resources.ResourceManager(pe=self, section=section)
                 self.resources = self.rsrc_mgr.resources
                 self.raw_resources = self.rsrc_mgr.raw_resources
 
             # Parse the relocation directory entry of the PE file
-            if idx == pestruct.IMAGE_DIRECTORY_ENTRY_BASERELOC:
+            if idx == c_pe.IMAGE_DIRECTORY_ENTRY_BASERELOC:
                 self.reloc_mgr = relocations.RelocationManager(pe=self, section=section)
                 self.relocations = self.reloc_mgr.relocations
 
             # Parse the TLS directory entry of the PE file
-            if idx == pestruct.IMAGE_DIRECTORY_ENTRY_TLS:
+            if idx == c_pe.IMAGE_DIRECTORY_ENTRY_TLS:
                 self.tls_mgr = tls.TLSManager(pe=self, section=section)
                 self.tls_callbacks = self.tls_mgr.callbacks
 
@@ -279,7 +297,9 @@ class PE:
         if rsrc_id not in self.resources:
             raise ResourceException(f"Resource with ID {rsrc_id} not found in PE!")
 
-        for resource in self.rsrc_mgr.parse_resources(resources=self.resources[rsrc_id]):
+        for resource in self.rsrc_mgr.parse_resources(
+            resources=self.resources[rsrc_id]
+        ):
             yield resource
 
     def virtual_address(self, address: int) -> int:
@@ -404,7 +424,10 @@ class PE:
 
         # Update the section data
         for section in self.patched_sections.values():
-            if section.virtual_address <= offset and section.virtual_address + section.virtual_size >= offset:
+            if (
+                section.virtual_address <= offset
+                and section.virtual_address + section.virtual_size >= offset
+            ):
                 self.seek(address=section.virtual_address)
                 section.data = self.read(size=section.virtual_size)
 
@@ -419,7 +442,9 @@ class PE:
         """
 
         directory_entry = self.optional_header.DataDirectory[index]
-        return self.virtual_read(address=directory_entry.VirtualAddress, size=directory_entry.Size)
+        return self.virtual_read(
+            address=directory_entry.VirtualAddress, size=directory_entry.Size
+        )
 
     def directory_va(self, index: int) -> int:
         """Returns the virtual address of a directory given its index.
@@ -452,15 +477,19 @@ class PE:
             A `cstruct` object of the debug entry within the PE file.
         """
 
-        debug_directory_entry = self.read_image_directory(index=pestruct.IMAGE_DIRECTORY_ENTRY_DEBUG)
-        image_directory_size = len(pestruct.IMAGE_DEBUG_DIRECTORY)
+        debug_directory_entry = self.read_image_directory(
+            index=c_pe.IMAGE_DIRECTORY_ENTRY_DEBUG
+        )
+        image_directory_size = len(c_pe.IMAGE_DEBUG_DIRECTORY)
 
         for _ in range(0, len(debug_directory_entry) // image_directory_size):
-            entry = pestruct.IMAGE_DEBUG_DIRECTORY(debug_directory_entry)
-            dbg_entry = self.virtual_read(address=entry.AddressOfRawData, size=entry.SizeOfData)
+            entry = c_pe.IMAGE_DEBUG_DIRECTORY(debug_directory_entry)
+            dbg_entry = self.virtual_read(
+                address=entry.AddressOfRawData, size=entry.SizeOfData
+            )
 
             if entry.Type == 0x2:
-                return cv_info_struct.CV_INFO_PDB70(dbg_entry)
+                return c_cv_info.CV_INFO_PDB70(dbg_entry)
 
     def get_section(self, segment_index: int) -> Tuple[str, sections.PESection]:
         """Retrieve the section of the PE by index.
@@ -526,14 +555,17 @@ class PE:
         # Use the provided RVA or calculate the new section virtual address
         virtual_address = (
             utils.align_int(
-                integer=last_section.virtual_address + last_section.virtual_size, blocksize=self.section_alignment
+                integer=last_section.virtual_address + last_section.virtual_size,
+                blocksize=self.section_alignment,
             )
             if not va
             else va
         )
 
         # Calculate the new section raw address
-        pointer_to_raw_data = last_section.pointer_to_raw_data + last_section.size_of_raw_data
+        pointer_to_raw_data = (
+            last_section.pointer_to_raw_data + last_section.size_of_raw_data
+        )
 
         # Build the new section
         new_section = sections.build_section(
@@ -545,7 +577,7 @@ class PE:
         )
 
         # Update the last section offset
-        offset = last_section.offset + pestruct.IMAGE_SECTION_HEADER.size
+        offset = last_section.offset + c_pe.IMAGE_SECTION_HEADER.size
         self.last_section_offset = offset
 
         # Increment the NumberOfSections field
@@ -561,15 +593,21 @@ class PE:
             )
 
         # Add the new section to the PE
-        self.sections[name] = sections.PESection(pe=self, section=new_section, offset=offset, data=data)
-        self.patched_sections[name] = sections.PESection(pe=self, section=new_section, offset=offset, data=data)
+        self.sections[name] = sections.PESection(
+            pe=self, section=new_section, offset=offset, data=data
+        )
+        self.patched_sections[name] = sections.PESection(
+            pe=self, section=new_section, offset=offset, data=data
+        )
 
         # Update the SizeOfImage field
         last_section = self.patched_sections[next(reversed(self.patched_sections))]
         last_va = last_section.virtual_address
         last_size = last_section.virtual_size
 
-        pe_size = utils.align_int(integer=(last_va + last_size), blocksize=self.section_alignment)
+        pe_size = utils.align_int(
+            integer=(last_va + last_size), blocksize=self.section_alignment
+        )
         self.optional_header.SizeOfImage = pe_size
 
         # Write the data to the PE file

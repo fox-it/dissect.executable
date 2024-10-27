@@ -25,7 +25,11 @@ def section_table(entries: int) -> SectionTable:
 
 
 def mock_section_table(section_data: bytes) -> Mock:
-    shdr = c_elf_64.Shdr(sh_offset=len(c_elf_64.Shdr), sh_size=len(section_data), sh_entsize=len(section_data))
+    shdr = c_elf_64.Shdr(
+        sh_offset=len(c_elf_64.Shdr),
+        sh_size=len(section_data),
+        sh_entsize=len(section_data),
+    )
     mocked_table = Mock()
     mocked_table.fh = BytesIO(shdr.dumps() + section_data)
     mocked_table.offset = 0
