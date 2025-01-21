@@ -1,17 +1,23 @@
+from __future__ import annotations
+
 import filecmp
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
-from util import data_file
 
 from dissect.executable import ELF
+
+from .util import data_file
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.mark.parametrize(
     "file_name",
     ["hello_world.out", "hello_world.stripped.out"],
 )
-def test_dump(tmp_path: Path, file_name: str):
+def test_dump(tmp_path: Path, file_name: str) -> None:
     output_path = tmp_path / "output"
     input_path = data_file(file_name)
 

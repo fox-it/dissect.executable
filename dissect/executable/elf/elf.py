@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import io
 from functools import cached_property, lru_cache
-from typing import BinaryIO, Callable, Generic, Iterator, Optional, TypeVar, Union
-
-from dissect.cstruct import cstruct
+from operator import itemgetter
+from typing import TYPE_CHECKING, BinaryIO, Callable, Generic, TypeVar
 
 from dissect.executable.elf.c_elf import (
     SHN,
@@ -18,6 +17,11 @@ from dissect.executable.elf.c_elf import (
     c_elf_64,
 )
 from dissect.executable.exception import InvalidSignatureError
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from dissect.cstruct import cstruct
 
 
 class ELF:
@@ -48,25 +52,31 @@ class ELF:
         return str(self.header)
 
     def dump(self) -> bytes:
-        output_data = (
-            [self.segments.dump_table(), self.section_table.dump_table()]
-            + self.segments.dump_data()
-            + self.section_table.dump_data()
-        )
+        output_data = [
+            self.segments.dump_table(),
+            self.section_table.dump_table(),
+            *self.segments.dump_data(),
+            *self.section_table.dump_data(),
+        ]
+        output_data.sort(key=itemgetter(0))
 
-        output_data.sort(key=lambda tup: tup[0])
-        output_buf = bytes()
-
+        result = []
+        output_size = 0
         for offset, output_bytes in output_data:
-            output_offset = offset - len(output_buf)
+            output_offset = offset - output_size
+
+            buf = None
             relative_offset = output_offset + len(output_bytes)
             if output_offset < 0 and relative_offset > 0:
-                output_buf += output_bytes[abs(output_offset) :]
+                buf = output_bytes[abs(output_offset) :]
             elif output_offset >= 0:
-                padding = b"\x00" * output_offset
-                output_buf += padding
-                output_buf += output_bytes
-        return output_buf
+                buf = (b"\x00" * output_offset) + output_bytes
+
+            if buf is not None:
+                result.append(buf)
+                output_size += len(buf)
+
+        return b"".join(result)
 
     @property
     def dynamic(self) -> bool:
@@ -91,14 +101,14 @@ class Table(Generic[T]):
         return self.items[idx]
 
     def _create_item(self, idx: int) -> T:
-        raise NotImplementedError()
+        raise NotImplementedError
 
-    def find(self, condition: Callable, **kwargs) -> list[T]:
+    def find(self, condition: Callable[[T], bool], **kwargs) -> list[T]:
         return [item for item in self if condition(item, **kwargs)]
 
 
 class Section:
-    def __init__(self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64):
+    def __init__(self, fh: BinaryIO, idx: int | None = None, c_elf: cstruct = c_elf_64):
         self.fh = fh
         self.idx = idx
 
@@ -116,14 +126,14 @@ class Section:
     def __repr__(self) -> str:
         return (
             f"<{self.__class__.__name__} idx={self.idx} name={self.name} type={self.type}"
-            f" offset=0x{self.offset:x} size=0x{ self.size:x}>"
+            f" offset=0x{self.offset:x} size=0x{self.size:x}>"
         )
 
-    def _set_name(self, table: StringTable):
+    def _set_name(self, table: StringTable) -> None:
         if self.header.sh_name != SHN.UNDEF:
             self._name = table[self.header.sh_name]
 
-    def _set_link(self, table: SectionTable):
+    def _set_link(self, table: SectionTable) -> None:
         if self.header.sh_link != SHN.UNDEF:
             self._link = table[self.header.sh_link]
 
@@ -142,14 +152,14 @@ class Section:
         return result
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         return self._name
 
     def is_related(self, segment: Segment) -> bool:
         return segment.is_related(self)
 
     @property
-    def link(self) -> Optional[Section]:
+    def link(self) -> Section | None:
         return self._link
 
     @cached_property
@@ -165,7 +175,7 @@ class SectionTable(Table[Section]):
         offset: int,
         entries: int,
         size: int,
-        string_index: Optional[int] = None,
+        string_index: int | None = None,
         c_elf: cstruct = c_elf_64,
     ):
         super().__init__(entries)
@@ -202,7 +212,7 @@ class SectionTable(Table[Section]):
         other_index = elf.header.e_shstrndx
         return cls(elf.fh, offset, entries, size, other_index, elf.c_elf)
 
-    def by_type(self, section_types: Union[list[int], int]) -> list[Section]:
+    def by_type(self, section_types: list[int] | int) -> list[Section]:
         types = section_types
         if not isinstance(section_types, list):
             types = [types]
@@ -224,7 +234,7 @@ class SectionTable(Table[Section]):
 
 
 class Segment:
-    def __init__(self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64):
+    def __init__(self, fh: BinaryIO, idx: int | None = None, c_elf: cstruct = c_elf_64):
         self.fh = fh
         self.idx = idx
         self.c_elf = c_elf
@@ -246,7 +256,7 @@ class Segment:
         return repr(self.header)
 
     @classmethod
-    def from_segment_table(cls, table: SegmentTable, idx: Optional[int] = None) -> Segment:
+    def from_segment_table(cls, table: SegmentTable, idx: int | None = None) -> Segment:
         fh = table.fh
         return cls(fh, idx, table.c_elf)
 
@@ -302,7 +312,7 @@ class SegmentTable(Table[Segment]):
     def related_segments(self, section: Section) -> list[Segment]:
         return self.find(lambda x: x.is_related(section))
 
-    def by_type(self, segment_types: Union[list[int], int]) -> list[Segment]:
+    def by_type(self, segment_types: list[int] | int) -> list[Segment]:
         types = segment_types
         if not isinstance(segment_types, list):
             types = [types]
@@ -318,7 +328,7 @@ class SegmentTable(Table[Segment]):
 
 
 class StringTable(Section):
-    def __init__(self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64):
+    def __init__(self, fh: BinaryIO, idx: int | None = None, c_elf: cstruct = c_elf_64):
         super().__init__(fh, idx, c_elf)
 
         self._get_string = lru_cache(256)(self._get_string)
@@ -333,7 +343,7 @@ class StringTable(Section):
 
 
 class Symbol:
-    def __init__(self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64):
+    def __init__(self, fh: BinaryIO, idx: int | None = None, c_elf: cstruct = c_elf_64):
         self.symbol = c_elf.Sym(fh)
         self.idx = idx
         self.c_elf = c_elf
@@ -373,11 +383,7 @@ class Symbol:
 
     @property
     def value(self) -> int:
-        symloc = self.symbol.st_shndx
-        if symloc == SHN.UNDEF:
-            return 0
-        else:
-            return self.symbol.st_value
+        return 0 if self.symbol.st_shndx == SHN.UNDEF else self.symbol.st_value
 
     def value_based_on_shndx(self, table: SectionTable) -> int:
         symloc = self.symbol.st_shndx
@@ -388,7 +394,7 @@ class Symbol:
 
 
 class SymbolTable(Section, Table[Symbol]):
-    def __init__(self, fh: BinaryIO, idx: Optional[int] = None, c_elf: cstruct = c_elf_64):
+    def __init__(self, fh: BinaryIO, idx: int | None = None, c_elf: cstruct = c_elf_64):
         # Initializes Section info
         Section.__init__(self, fh, idx, c_elf)
         count = self.size // self.entry_size
