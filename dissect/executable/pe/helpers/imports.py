@@ -3,12 +3,14 @@ from __future__ import annotations
 import struct
 from collections import OrderedDict
 from io import BytesIO
-from typing import TYPE_CHECKING, BinaryIO, Iterator
+from typing import TYPE_CHECKING, BinaryIO
 
 from dissect.executable.pe.c_pe import c_pe
 from dissect.executable.pe.helpers import utils
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from dissect.cstruct.cstruct import cstruct
 
     from dissect.executable.pe.helpers.sections import PESection
@@ -123,15 +125,11 @@ class ImportManager:
         The imports are in turn added to the `imports` attribute so they can be accessed by the user.
         """
 
-        import_data = BytesIO(
-            self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT)
-        )
+        import_data = BytesIO(self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT))
         import_data.seek(0)
 
         # Loop over the entries
-        for descriptor_va, import_descriptor in self.import_descriptors(
-            import_data=import_data
-        ):
+        for descriptor_va, import_descriptor in self.import_descriptors(import_data=import_data):
             if import_descriptor.Name not in [0xFFFFF800, 0x0]:
                 self.pe.seek(import_descriptor.Name)
                 modulename = c_pe.char[None](self.pe)
@@ -151,9 +149,7 @@ class ImportManager:
                 )
 
                 for thunkdata in self.parse_thunks(offset=first_thunk):
-                    module.functions.append(
-                        ImportFunction(pe=self.pe, thunkdata=thunkdata)
-                    )
+                    module.functions.append(ImportFunction(pe=self.pe, thunkdata=thunkdata))
 
                 self.imports[modulename.decode()] = module
 
@@ -177,9 +173,7 @@ class ImportManager:
 
             yield import_data.tell(), import_descriptor
 
-    def parse_thunks(
-        self, offset: int
-    ) -> Iterator[c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64, None, None]:
+    def parse_thunks(self, offset: int) -> Iterator[c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64, None, None]:
         """Parse the import thunks for every module.
 
         Args:
@@ -206,9 +200,7 @@ class ImportManager:
             functions: A `list` of function names belonging to the module.
         """
 
-        self.last_section = self.pe.patched_sections[
-            next(reversed(self.pe.patched_sections))
-        ]
+        self.last_section = self.pe.patched_sections[next(reversed(self.pe.patched_sections))]
 
         # Build a dummy import module
         self.imports[dllname] = ImportModule(
@@ -220,14 +212,12 @@ class ImportManager:
         )
         # Build the dummy module functions
         for function in functions:
-            self.pe.imports[dllname].functions.append(
-                ImportFunction(pe=self.pe, thunkdata=None, name=function)
-            )
+            self.pe.imports[dllname].functions.append(ImportFunction(pe=self.pe, thunkdata=None, name=function))
 
         # Rebuild the import table with the new import module and functions
         self.build_import_table()
 
-    def delete(self, dllname: str, functions: list):
+    def delete(self, dllname: str, functions: list) -> None:
         raise NotImplementedError
 
     def build_import_table(self) -> None:
@@ -265,9 +255,7 @@ class ImportManager:
             datadirectory_size += len(descriptor)
 
         # Create a new section
-        section_data = utils.align_data(
-            data=self.import_data, blocksize=self.pe.file_alignment
-        )
+        section_data = utils.align_data(data=self.import_data, blocksize=self.pe.file_alignment)
         size = len(self.import_data) + c_pe.IMAGE_SECTION_HEADER.size
         self.pe.add_section(
             name=".idata",
@@ -321,8 +309,7 @@ class ImportManager:
             rva += self.pe.optional_header.SizeOfImage
             thunkdata += (
                 struct.pack("<Q", rva)
-                if self.pe.file_header.Machine
-                == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64
+                if self.pe.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64
                 else struct.pack("<L", rva)
             )
 

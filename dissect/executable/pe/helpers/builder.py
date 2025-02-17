@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
-from typing import TYPE_CHECKING
 
 from dissect.executable.exception import BuildSectionException
 from dissect.executable.pe.c_pe import c_pe
@@ -29,9 +28,7 @@ class Builder:
         subsystem: int = 0x2,
     ):
         self.arch = (
-            c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64
-            if arch == "x64"
-            else c_pe.MachineType.IMAGE_FILE_MACHINE_I386
+            c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64 if arch == "x64" else c_pe.MachineType.IMAGE_FILE_MACHINE_I386
         )
         self.dll = dll
         self.subsystem = subsystem
@@ -52,9 +49,7 @@ class Builder:
 
         image_characteristics = self.get_characteristics()
         # Generate the file header
-        self.file_header = self.gen_file_header(
-            machine=self.arch, characteristics=image_characteristics
-        )
+        self.file_header = self.gen_file_header(machine=self.arch, characteristics=image_characteristics)
 
         # Generate the optional header
         self.optional_header = self.gen_optional_header()
@@ -117,10 +112,10 @@ class Builder:
         e_cs: int = 0,
         e_lfarlc: int = 64,
         e_ovno: int = 0,
-        e_res: list = [0, 0, 0, 0],
+        e_res: list[int] | None = None,
         e_oemid: int = 0,
         e_oeminfo: int = 0,
-        e_res2: int = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        e_res2: list[int] | None = None,
         e_lfanew: int = 0,
     ) -> c_pe.IMAGE_DOS_HEADER:
         """Generate the MZ header for the new PE file.
@@ -166,15 +161,15 @@ class Builder:
         mz_header.e_cs = e_cs
         mz_header.e_lfarlc = e_lfarlc
         mz_header.e_ovno = e_ovno
-        mz_header.e_res = e_res
+        mz_header.e_res = e_res or [0, 0, 0, 0]
         mz_header.e_oemid = e_oemid
         mz_header.e_oeminfo = e_oeminfo
-        mz_header.e_res2 = e_res2
+        mz_header.e_res2 = e_res2 or [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
         # Calculate the start of the NT headers by checking the location and size of the relocation table
         # within the MZ header
         start_of_nt_header = (mz_header.e_lfarlc + (mz_header.e_crlc * 4)) + len(STUB)
-        mz_header.e_lfanew = start_of_nt_header if not e_lfanew else e_lfanew
+        mz_header.e_lfanew = e_lfanew if e_lfanew else start_of_nt_header
         # Align the e_lfanew value
         mz_header.e_lfanew = mz_header.e_lfanew + (mz_header.e_lfanew % 2)
 
@@ -236,7 +231,7 @@ class Builder:
 
         # Set the timestamp to now if not given
         if not time_date_stamp:
-            time_date_stamp = int(datetime.utcnow().timestamp())
+            time_date_stamp = int(datetime.now(tz=timezone.utc).timestamp())
 
         file_header = c_pe.IMAGE_FILE_HEADER()
         file_header.Machine = machine
@@ -280,10 +275,7 @@ class Builder:
         size_of_heap_commit: int = 0x1000,
         loaderflags: int = 0,
         number_of_rva_and_sizes: int = c_pe.IMAGE_NUMBEROF_DIRECTORY_ENTRIES,
-        datadirectory: list = [
-            c_pe.IMAGE_DATA_DIRECTORY(BytesIO(b"\x00" * len(c_pe.IMAGE_DATA_DIRECTORY)))
-            for _ in range(c_pe.IMAGE_NUMBEROF_DIRECTORY_ENTRIES)
-        ],
+        datadirectory: list[c_pe.IMAGE_DATA_DIRECTORY] | None = None,
     ) -> c_pe.IMAGE_OPTIONAL_HEADER | c_pe.IMAGE_OPTIONAL_HEADER64:
         """Generate the optional header for the new PE file.
 
@@ -325,11 +317,12 @@ class Builder:
 
         if self.machine == 0x8664:
             optional_header = c_pe.IMAGE_OPTIONAL_HEADER64()
-            optional_header.Magic = 0x20B if not magic else magic
+            _magic = 0x20B
         else:
             optional_header = c_pe.IMAGE_OPTIONAL_HEADER()
-            optional_header.Magic = 0x10B if not magic else magic
+            _magic = 0x10B
 
+        optional_header.Magic = magic or _magic
         self.file_alignment = file_alignment
         self.section_alignment = section_alignment
 
@@ -373,7 +366,10 @@ class Builder:
         optional_header.SizeOfHeapCommit = size_of_heap_commit
         optional_header.LoaderFlags = loaderflags
         optional_header.NumberOfRvaAndSizes = number_of_rva_and_sizes
-        optional_header.DataDirectory = datadirectory
+        optional_header.DataDirectory = datadirectory or [
+            c_pe.IMAGE_DATA_DIRECTORY(BytesIO(b"\x00" * len(c_pe.IMAGE_DATA_DIRECTORY)))
+            for _ in range(c_pe.IMAGE_NUMBEROF_DIRECTORY_ENTRIES)
+        ]
 
         return optional_header
 
@@ -415,18 +411,14 @@ class Builder:
         """
 
         if len(name) > 8:
-            raise BuildSectionException(
-                "section names can't be longer than 8 characters"
-            )
+            raise BuildSectionException("section names can't be longer than 8 characters")
 
         if isinstance(name, str):
             name = name.encode()
 
         section_header = c_pe.IMAGE_SECTION_HEADER()
 
-        pointer_to_raw_data = utils.align_int(
-            integer=pointer_to_raw_data, blocksize=self.file_alignment
-        )
+        pointer_to_raw_data = utils.align_int(integer=pointer_to_raw_data, blocksize=self.file_alignment)
 
         section_header.Name = name + utils.pad(size=8 - len(name))
         section_header.VirtualSize = virtual_size
@@ -452,9 +444,7 @@ class Builder:
             The size of the PE.
         """
 
-        last_section = self.pe.patched_sections[
-            next(reversed(self.pe.patched_sections))
-        ]
+        last_section = self.pe.patched_sections[next(reversed(self.pe.patched_sections))]
         va = last_section.virtual_address
         size = last_section.virtual_size
 

@@ -36,7 +36,7 @@ class PESection:
         # Keep track of the directories that are within this section
         self.directories = OrderedDict()
 
-        self._data = self.read_data() if not data else data
+        self._data = data or self.read_data()
 
     def read_data(self) -> bytes:
         """Return the data within the section.
@@ -56,7 +56,7 @@ class PESection:
         return self.virtual_size
 
     @size.setter
-    def size(self, value: int):
+    def size(self, value: int) -> None:
         """Setter to set the size of the data to the specified value.
 
         This function can be used to update the size of the data, but also dynamically update the offset of the data
@@ -67,9 +67,7 @@ class PESection:
         """
 
         self.virtual_size = value
-        self.size_of_raw_data = utils.align_int(
-            integer=value, blocksize=self.pe.file_alignment
-        )
+        self.size_of_raw_data = utils.align_int(integer=value, blocksize=self.pe.file_alignment)
 
     @property
     def virtual_address(self) -> int:
@@ -77,7 +75,7 @@ class PESection:
         return self._virtual_address
 
     @virtual_address.setter
-    def virtual_address(self, value: int):
+    def virtual_address(self, value: int) -> None:
         """Setter to set the virtual address of the section to the specified value.
 
         This function also updates any of the virtual addresses of the directories that are residing within the section
@@ -101,7 +99,7 @@ class PESection:
         return self._virtual_size
 
     @virtual_size.setter
-    def virtual_size(self, value: int):
+    def virtual_size(self, value: int) -> None:
         """Setter to set the virtual size of the section to the specified value.
 
         Args:
@@ -117,7 +115,7 @@ class PESection:
         return self._pointer_to_raw_data
 
     @pointer_to_raw_data.setter
-    def pointer_to_raw_data(self, value: int):
+    def pointer_to_raw_data(self, value: int) -> None:
         """Setter to set the pointer to the raw data of the section to the specified value.
 
         Args:
@@ -133,7 +131,7 @@ class PESection:
         return self._size_of_raw_data
 
     @size_of_raw_data.setter
-    def size_of_raw_data(self, value: int):
+    def size_of_raw_data(self, value: int) -> None:
         """Setter to set the size of the raw data to the specified value.
 
         The SizeOfRawData field uses the section alignment to make sure the data within this section is aligned to the
@@ -143,12 +141,8 @@ class PESection:
             value: The size of the data.
         """
 
-        self._size_of_raw_data = utils.align_int(
-            integer=value, blocksize=self.pe.file_alignment
-        )
-        self.section.SizeOfRawData = utils.align_int(
-            integer=value, blocksize=self.pe.file_alignment
-        )
+        self._size_of_raw_data = utils.align_int(integer=value, blocksize=self.pe.file_alignment)
+        self.section.SizeOfRawData = utils.align_int(integer=value, blocksize=self.pe.file_alignment)
 
     @property
     def data(self) -> bytes:
@@ -156,7 +150,7 @@ class PESection:
         return self._data[: self.virtual_size]
 
     @data.setter
-    def data(self, value: bytes):
+    def data(self, value: bytes) -> None:
         """Setter to set the new data of the resource, but also dynamically update the offset of the resources within
         the same directory.
 
@@ -191,12 +185,8 @@ class PESection:
             if section.virtual_address == prev_va:
                 continue
 
-            pointer_to_raw_data = utils.align_int(
-                integer=prev_ptr + prev_size, blocksize=self.pe.file_alignment
-            )
-            virtual_address = utils.align_int(
-                integer=prev_va + prev_vsize, blocksize=self.pe.section_alignment
-            )
+            pointer_to_raw_data = utils.align_int(integer=prev_ptr + prev_size, blocksize=self.pe.file_alignment)
+            virtual_address = utils.align_int(integer=prev_va + prev_vsize, blocksize=self.pe.section_alignment)
 
             if section.virtual_address < virtual_address:
                 """Set the virtual address and raw pointer of the section to the new values, but only do so if the

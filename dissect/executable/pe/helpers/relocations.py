@@ -25,12 +25,10 @@ class RelocationManager:
 
         self.parse_relocations()
 
-    def parse_relocations(self):
+    def parse_relocations(self) -> None:
         """Parse the relocation table of the PE file."""
 
-        reloc_data = BytesIO(
-            self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_BASERELOC)
-        )
+        reloc_data = BytesIO(self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_BASERELOC))
         reloc_data_size = reloc_data.getbuffer().nbytes
         while reloc_data.tell() < reloc_data_size:
             reloc_directory = c_pe.IMAGE_BASE_RELOCATION(reloc_data)
@@ -39,11 +37,9 @@ class RelocationManager:
                 break
 
             # Each entry consists of 2 bytes
-            number_of_entries = (
-                reloc_directory.SizeOfBlock - len(reloc_directory.dumps())
-            ) // 2
+            number_of_entries = (reloc_directory.SizeOfBlock - len(reloc_directory.dumps())) // 2
             entries = []
-            for _ in range(0, number_of_entries):
+            for _ in range(number_of_entries):
                 entry = c_pe.uint16(reloc_data)
                 if entry:
                     entries.append(entry)
@@ -56,5 +52,5 @@ class RelocationManager:
                 }
             )
 
-    def add(self):
+    def add(self) -> None:
         raise NotImplementedError

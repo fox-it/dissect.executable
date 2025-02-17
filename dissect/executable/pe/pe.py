@@ -3,7 +3,8 @@ from __future__ import annotations
 from collections import OrderedDict
 from datetime import datetime, timezone
 from io import BytesIO
-from typing import TYPE_CHECKING, BinaryIO, Tuple
+from pathlib import Path
+from typing import TYPE_CHECKING, BinaryIO
 
 from dissect.executable.exception import (
     InvalidAddress,
@@ -25,8 +26,12 @@ from dissect.executable.pe.helpers import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from dissect.cstruct.cstruct import cstruct
     from dissect.cstruct.types.enum import EnumInstance
+
+    from dissect.executable.pe.helpers.resources import Resource
 
 
 class PE:
@@ -54,14 +59,14 @@ class PE:
         self.section_header_offset = 0
         self.last_section_offset = 0
 
-        self.sections = OrderedDict()
-        self.patched_sections = OrderedDict()
+        self.sections: OrderedDict[str, sections.PESection] = OrderedDict()
+        self.patched_sections: OrderedDict[str, sections.PESection] = OrderedDict()
 
-        self.imports = None
-        self.exports = None
-        self.resources = None
+        self.imports: OrderedDict[str, imports.ImportModule] = None
+        self.exports: OrderedDict[str, exports.ExportFunction] = None
+        self.resources: OrderedDict[str, resources.Resource] = None
         self.raw_resources = None
-        self.relocations = None
+        self.relocations: list[dict] = None
         self.tls_callbacks = None
 
         self.directories = OrderedDict()
@@ -78,9 +83,7 @@ class PE:
 
         self.base_address = self.optional_header.ImageBase
 
-        self.timestamp = datetime.fromtimestamp(
-            self.file_header.TimeDateStamp, tz=timezone.utc
-        )
+        self.timestamp = datetime.fromtimestamp(self.file_header.TimeDateStamp, tz=timezone.utc)
 
         # Parse the section header
         self.parse_section_header()
@@ -96,9 +99,9 @@ class PE:
         """
 
         self.pe_file.seek(self.mz_header.e_lfanew)
-        return True if c_pe.uint32(self.pe_file) == 0x4550 else False
+        return c_pe.uint32(self.pe_file) == 0x4550
 
-    def parse_headers(self):
+    def parse_headers(self) -> None:
         """Function to parse the basic PE headers:
             - DOS header
             - File header (part of NT header)
@@ -130,7 +133,7 @@ class PE:
 
         self.optional_header = self.nt_headers.OptionalHeader
 
-    def _set_pe_architecture(self):
+    def _set_pe_architecture(self) -> None:
         """Set the architecture specific settings. Some of the structs are architecture specific.
 
         Raises:
@@ -148,11 +151,9 @@ class PE:
             self._high_bit = 1 << 31
             self.read_address = c_pe.uint32
         else:
-            raise InvalidArchitecture(
-                f"Invalid architecture found: {self.file_header.Machine:02x}"
-            )
+            raise InvalidArchitecture(f"Invalid architecture found: {self.file_header.Machine:02x}")
 
-    def parse_section_header(self):
+    def parse_section_header(self) -> None:
         """Parse the sections within the PE file."""
 
         self.pe_file.seek(self.section_header_offset)
@@ -163,16 +164,12 @@ class PE:
             section_header = c_pe.IMAGE_SECTION_HEADER(self.pe_file)
             section_name = section_header.Name.decode().strip("\x00")
             # Take note of the sections, keep track of any patches seperately
-            self.sections[section_name] = sections.PESection(
-                pe=self, section=section_header, offset=offset
-            )
-            self.patched_sections[section_name] = sections.PESection(
-                pe=self, section=section_header, offset=offset
-            )
+            self.sections[section_name] = sections.PESection(pe=self, section=section_header, offset=offset)
+            self.patched_sections[section_name] = sections.PESection(pe=self, section=section_header, offset=offset)
 
         self.last_section_offset = self.sections[next(reversed(self.sections))].offset
 
-    def section(self, va: int = 0, name: str = "") -> sections.PESection:
+    def section(self, va: int = 0, name: str = "") -> sections.PESection | None:
         """Function to retrieve a section based on the given virtual address or name.
 
         Args:
@@ -190,10 +187,10 @@ class PE:
                     section.virtual_address + section.virtual_size,
                 ):
                     return section
-        else:
-            return self.sections[name]
+            return None
+        return self.sections[name]
 
-    def patched_section(self, va: int = 0, name: str = "") -> sections.PESection:
+    def patched_section(self, va: int = 0, name: str = "") -> sections.PESection | None:
         """Function to retrieve a patched section based on the given virtual address or name.
 
         Args:
@@ -211,8 +208,8 @@ class PE:
                     section.virtual_address + section.virtual_size,
                 ):
                     return section
-        else:
-            return self.patched_sections[name]
+            return None
+        return self.patched_sections[name]
 
     def datadirectory_section(self, index: int) -> sections.PESection:
         """Return the section that contains the given virtual address.
@@ -225,16 +222,13 @@ class PE:
         """
 
         va = self.directory_va(index=index)
-        for _, section in self.patched_sections.items():
-            if (
-                va >= section.virtual_address
-                and va < section.virtual_address + section.virtual_size
-            ):
+        for section in self.patched_sections.values():
+            if va >= section.virtual_address and va < section.virtual_address + section.virtual_size:
                 return section
 
         raise InvalidVA(f"VA not found in sections: {va:#04x}")
 
-    def parse_directories(self):
+    def parse_directories(self) -> None:
         """Parse the different data directories in the PE file and initialize their associated managers.
 
         For now the following data directories are implemented:
@@ -251,10 +245,7 @@ class PE:
 
             # Take note of the current directory VA so we can dynamically update it when resizing sections
             section = self.datadirectory_section(index=idx)
-            directory_va_offset = (
-                self.optional_header.DataDirectory[idx].VirtualAddress
-                - section.virtual_address
-            )
+            directory_va_offset = self.optional_header.DataDirectory[idx].VirtualAddress - section.virtual_address
             section.directories[idx] = directory_va_offset
 
             # Parse the Import Address Table (IAT)
@@ -282,7 +273,7 @@ class PE:
                 self.tls_mgr = tls.TLSManager(pe=self, section=section)
                 self.tls_callbacks = self.tls_mgr.callbacks
 
-    def get_resource_type(self, rsrc_id: str | EnumInstance):
+    def get_resource_type(self, rsrc_id: str | EnumInstance) -> Iterator[Resource]:
         """Yields a generator containing all of the nodes within the resources that contain the requested ID.
 
         The ID can be either given by name or its value.
@@ -297,10 +288,7 @@ class PE:
         if rsrc_id not in self.resources:
             raise ResourceException(f"Resource with ID {rsrc_id} not found in PE!")
 
-        for resource in self.rsrc_mgr.parse_resources(
-            resources=self.resources[rsrc_id]
-        ):
-            yield resource
+        yield from self.rsrc_mgr.parse_resources(resources=self.resources[rsrc_id])
 
     def virtual_address(self, address: int) -> int:
         """Return the virtual address given a (possible) physical address.
@@ -315,14 +303,14 @@ class PE:
         if self.virtual:
             return address
 
-        for _, section in self.patched_sections.items():
+        for section in self.patched_sections.values():
             max_address = section.virtual_address + section.virtual_size
             if address >= section.virtual_address and address < max_address:
                 return section.pointer_to_raw_data + (address - section.virtual_address)
 
         raise InvalidVA(f"VA not found in sections: {address:#04x}")
 
-    def raw_address(self, offset) -> int:
+    def raw_address(self, offset: int) -> int:
         """Return the physical address given a virtual address.
 
         Args:
@@ -332,7 +320,7 @@ class PE:
             The physical address as an `int`.
         """
 
-        for _, section in self.patched_sections.items():
+        for section in self.patched_sections.values():
             max_address = section.pointer_to_raw_data + section.size_of_raw_data
             if offset >= section.pointer_to_raw_data and offset < max_address:
                 return section.virtual_address + (offset - section.pointer_to_raw_data)
@@ -375,7 +363,7 @@ class PE:
         self.pe_file.seek(old_offset)
         return data
 
-    def seek(self, address: int):
+    def seek(self, address: int) -> None:
         """Seek to the given virtual address within a PE file.
 
         Args:
@@ -407,7 +395,7 @@ class PE:
 
         return self.pe_file.read(size)
 
-    def write(self, data: bytes):
+    def write(self, data: bytes) -> None:
         """Write the data to the PE file.
 
         This write function will also make sure to update the section data.
@@ -424,10 +412,7 @@ class PE:
 
         # Update the section data
         for section in self.patched_sections.values():
-            if (
-                section.virtual_address <= offset
-                and section.virtual_address + section.virtual_size >= offset
-            ):
+            if section.virtual_address <= offset and section.virtual_address + section.virtual_size >= offset:
                 self.seek(address=section.virtual_address)
                 section.data = self.read(size=section.virtual_size)
 
@@ -442,9 +427,7 @@ class PE:
         """
 
         directory_entry = self.optional_header.DataDirectory[index]
-        return self.virtual_read(
-            address=directory_entry.VirtualAddress, size=directory_entry.Size
-        )
+        return self.virtual_read(address=directory_entry.VirtualAddress, size=directory_entry.Size)
 
     def directory_va(self, index: int) -> int:
         """Returns the virtual address of a directory given its index.
@@ -470,35 +453,32 @@ class PE:
 
         return self.optional_header.DataDirectory[index].Size != 0
 
-    def debug(self) -> cstruct:
+    def debug(self) -> cstruct | None:
         """Return the debug directory of the given PE file.
 
         Returns:
             A `cstruct` object of the debug entry within the PE file.
         """
 
-        debug_directory_entry = self.read_image_directory(
-            index=c_pe.IMAGE_DIRECTORY_ENTRY_DEBUG
-        )
+        debug_directory_entry = self.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_DEBUG)
         image_directory_size = len(c_pe.IMAGE_DEBUG_DIRECTORY)
 
-        for _ in range(0, len(debug_directory_entry) // image_directory_size):
+        for _ in range(len(debug_directory_entry) // image_directory_size):
             entry = c_pe.IMAGE_DEBUG_DIRECTORY(debug_directory_entry)
-            dbg_entry = self.virtual_read(
-                address=entry.AddressOfRawData, size=entry.SizeOfData
-            )
+            dbg_entry = self.virtual_read(address=entry.AddressOfRawData, size=entry.SizeOfData)
 
             if entry.Type == 0x2:
                 return c_cv_info.CV_INFO_PDB70(dbg_entry)
+        return None
 
-    def get_section(self, segment_index: int) -> Tuple[str, sections.PESection]:
+    def get_section(self, segment_index: int) -> tuple[str, sections.PESection]:
         """Retrieve the section of the PE by index.
 
         Args:
             segment_index: The segment to retrieve based on the order within the PE.
 
         Returns:
-            A `Tuple` contianing the section name and attributes as `PESection`.
+            A `tuple` contianing the section name and attributes as `PESection`.
         """
 
         sections = list(self.sections.items())
@@ -529,12 +509,12 @@ class PE:
         self,
         name: str,
         data: bytes,
-        va: int = None,
-        datadirectory: int = None,
-        datadirectory_rva: int = None,
-        datadirectory_size: int = None,
-        size: int = None,
-    ):
+        va: int | None = None,
+        datadirectory: int | None = None,
+        datadirectory_rva: int | None = None,
+        datadirectory_size: int | None = None,
+        size: int | None = None,
+    ) -> None:
         """Add a new section to the PE file.
 
         Args:
@@ -550,22 +530,17 @@ class PE:
 
         # Calculate the new section size
         raw_size = utils.align_int(integer=len(data), blocksize=self.file_alignment)
-        virtual_size = len(data) if not size else size
+        virtual_size = size or len(data)
 
         # Use the provided RVA or calculate the new section virtual address
-        virtual_address = (
-            utils.align_int(
-                integer=last_section.virtual_address + last_section.virtual_size,
-                blocksize=self.section_alignment,
-            )
-            if not va
-            else va
+
+        virtual_address = va or utils.align_int(
+            integer=last_section.virtual_address + last_section.virtual_size,
+            blocksize=self.section_alignment,
         )
 
         # Calculate the new section raw address
-        pointer_to_raw_data = (
-            last_section.pointer_to_raw_data + last_section.size_of_raw_data
-        )
+        pointer_to_raw_data = last_section.pointer_to_raw_data + last_section.size_of_raw_data
 
         # Build the new section
         new_section = sections.build_section(
@@ -585,29 +560,19 @@ class PE:
 
         # Set the VA and size of the datadirectory entry if this was marked as being such
         if datadirectory is not None:
-            self.optional_header.DataDirectory[datadirectory].VirtualAddress = (
-                virtual_address if not datadirectory_rva else datadirectory_rva
-            )
-            self.optional_header.DataDirectory[datadirectory].Size = (
-                len(data) if not datadirectory_size else datadirectory_size
-            )
+            self.optional_header.DataDirectory[datadirectory].VirtualAddress = datadirectory_rva or virtual_address
+            self.optional_header.DataDirectory[datadirectory].Size = datadirectory_size or len(data)
 
         # Add the new section to the PE
-        self.sections[name] = sections.PESection(
-            pe=self, section=new_section, offset=offset, data=data
-        )
-        self.patched_sections[name] = sections.PESection(
-            pe=self, section=new_section, offset=offset, data=data
-        )
+        self.sections[name] = sections.PESection(pe=self, section=new_section, offset=offset, data=data)
+        self.patched_sections[name] = sections.PESection(pe=self, section=new_section, offset=offset, data=data)
 
         # Update the SizeOfImage field
         last_section = self.patched_sections[next(reversed(self.patched_sections))]
         last_va = last_section.virtual_address
         last_size = last_section.virtual_size
 
-        pe_size = utils.align_int(
-            integer=(last_va + last_size), blocksize=self.section_alignment
-        )
+        pe_size = utils.align_int(integer=(last_va + last_size), blocksize=self.section_alignment)
         self.optional_header.SizeOfImage = pe_size
 
         # Write the data to the PE file
@@ -623,7 +588,7 @@ class PE:
         # Reparse the directories
         self.parse_directories()
 
-    def write_pe(self, filename: str = "out.exe"):
+    def write_pe(self, filename: str = "out.exe") -> None:
         """Write the contents of the PE to a new file.
 
         This will use the patcher that is part of the project to make sure any kind of relative addressing is also
@@ -635,6 +600,4 @@ class PE:
 
         pepatcher = patcher.Patcher(pe=self)
         new_pe = pepatcher.build
-
-        with open(filename, "wb") as fhout:
-            fhout.write(new_pe.read())
+        Path(filename).write_bytes(new_pe.read())

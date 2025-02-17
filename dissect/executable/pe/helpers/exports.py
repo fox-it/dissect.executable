@@ -90,8 +90,8 @@ class ExportManager:
                     ordinal=idx + 1, address=address, name=export_name
                 )
 
-    def add(self):
+    def add(self) -> None:
         raise NotImplementedError
 
-    def delete(self):
+    def delete(self) -> None:
         raise NotImplementedError

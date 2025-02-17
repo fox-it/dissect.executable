@@ -5,9 +5,11 @@ import pytest
 from dissect.executable.exception import InvalidPE
 from dissect.executable.pe.pe import PE
 
+from .util import data_file
+
 
 def test_pe_valid_signature() -> None:
-    with open("tests/data/testexe.exe", "rb") as pe_fh:
+    with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
     assert pe._valid() is True
@@ -28,10 +30,10 @@ def test_pe_sections() -> None:
         ".reloc",
         ".tls",
     ]
-    with open("tests/data/testexe.exe", "rb") as pe_fh:
+    with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-    assert known_sections == [section for section in pe.sections.keys()]
+    assert known_sections == list(pe.sections)
 
 
 def test_pe_imports() -> None:
@@ -46,10 +48,10 @@ def test_pe_imports() -> None:
         "KERNEL32.dll",
         "USER32.dll",
     ]
-    with open("tests/data/testexe.exe", "rb") as pe_fh:
+    with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-    assert known_imports == [import_ for import_ in pe.imports.keys()]
+    assert known_imports == list(pe.imports)
 
 
 def test_pe_exports() -> None:
@@ -62,22 +64,22 @@ def test_pe_exports() -> None:
         "ShadowPlayOnSystemStart",
     ]
 
-    with open("tests/data/testexe.exe", "rb") as pe_fh:
+    with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-    assert known_exports == [export_ for export_ in pe.exports.keys()]
+    assert known_exports == list(pe.exports)
 
 
 def test_pe_resources() -> None:
     known_resource_types = ["RcData", "Manifest"]
-    with open("tests/data/testexe.exe", "rb") as pe_fh:
+    with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-    assert known_resource_types == [resource for resource in pe.resources.keys()]
+    assert known_resource_types == list(pe.resources)
 
 
 def test_pe_relocations() -> None:
-    with open("tests/data/testexe.exe", "rb") as pe_fh:
+    with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
     assert len(pe.relocations) == 9
@@ -97,7 +99,7 @@ def test_pe_tls_callbacks() -> None:
         466944,
     ]
 
-    with open("tests/data/testexe.exe", "rb") as pe_fh:
+    with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
     assert pe.tls_callbacks == known_callbacks

@@ -11,15 +11,15 @@ from dissect.executable.pe.helpers.sections import PESection
 from dissect.executable.pe.pe import PE
 
 __all__ = [
+    "PE",
     "Builder",
     "ExportFunction",
     "ExportManager",
     "ImportFunction",
     "ImportManager",
     "ImportModule",
-    "Patcher",
-    "PE",
     "PESection",
+    "Patcher",
     "Resource",
     "ResourceManager",
 ]

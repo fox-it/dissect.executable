@@ -26,12 +26,10 @@ class TLSManager:
 
         self.parse_tls()
 
-    def parse_tls(self):
+    def parse_tls(self) -> None:
         """Parse the TLS directory entry of the PE file when present."""
 
-        tls_data = BytesIO(
-            self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_TLS)
-        )
+        tls_data = BytesIO(self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_TLS))
         self.tls = self.pe.image_tls_directory(tls_data)
 
         self.pe.seek(self.tls.AddressOfCallBacks - self.pe.optional_header.ImageBase)
@@ -57,7 +55,7 @@ class TLSManager:
         return self.tls.EndAddressOfRawData - self.tls.StartAddressOfRawData
 
     @size.setter
-    def size(self, value):
+    def size(self, value: int) -> None:
         """Setter to set the size of the TLS data to the specified value.
 
         Args:
@@ -89,7 +87,7 @@ class TLSManager:
         return self._data
 
     @data.setter
-    def data(self, value):
+    def data(self, value: bytes) -> None:
         """Dynamically update the TLS directory data if the user changes the data.
 
         Args:
@@ -107,9 +105,7 @@ class TLSManager:
         section_data.write(self.tls.dumps())
 
         # Write the new TLS data to the section
-        start_address_rva = (
-            self.tls.StartAddressOfRawData - self.pe.optional_header.ImageBase
-        )
+        start_address_rva = self.tls.StartAddressOfRawData - self.pe.optional_header.ImageBase
         start_address_section_offset = start_address_rva - self.section.virtual_address
         section_data.seek(start_address_section_offset)
         section_data.write(self._data)
@@ -118,5 +114,5 @@ class TLSManager:
         section_data.seek(0)
         self.section.data = section_data.read()
 
-    def add(self):
+    def add(self) -> None:
         raise NotImplementedError
