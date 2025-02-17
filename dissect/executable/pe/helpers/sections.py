@@ -251,6 +251,6 @@ def build_section(
     section_header.PointerToLinenumbers = 0
     section_header.NumberOfRelocations = 0
     section_header.NumberOfLinenumbers = 0
-    section_header.Characteristics = characteristics
+    section_header.Characteristics = c_pe.SectionFlags(characteristics)
 
     return section_header

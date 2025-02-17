@@ -358,8 +358,8 @@ class Builder:
         optional_header.SizeOfImage = size_of_image
         optional_header.SizeOfHeaders = size_of_headers
         optional_header.CheckSum = checksum
-        optional_header.Subsystem = subsystem
-        optional_header.DllCharacteristics = dll_characteristics
+        optional_header.Subsystem = c_pe.WindowsSubsystem(subsystem)
+        optional_header.DllCharacteristics = c_pe.DLLCharacteristics(dll_characteristics)
         optional_header.SizeOfStackReserve = size_of_stack_reserve
         optional_header.SizeOfStackCommit = size_of_stack_commit
         optional_header.SizeOfHeapReserve = size_of_heap_reserve

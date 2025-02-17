@@ -381,8 +381,7 @@ class Resource:
         for rsrc_entry in sorted(self.pe.raw_resources, key=lambda rsrc: rsrc["data_offset"]):
             entry_offset = rsrc_entry["offset"]
             entry = rsrc_entry["entry"]
-
-            if entry._type.name == "IMAGE_RESOURCE_DATA_ENTRY":
+            if isinstance(entry, c_pe.IMAGE_RESOURCE_DATA_ENTRY):
                 rsrc_obj = rsrc_entry["resource"]
                 data_offset = rsrc_entry["data_offset"]
 
