@@ -31,13 +31,13 @@ class ImportModule:
     def __init__(
         self,
         name: bytes,
-        import_descriptor: c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT,
+        import_descriptor: int | None,
         module_va: int,
         name_va: int,
         first_thunk: int,
     ):
         self.name = name
-        self.import_descriptor = import_descriptor
+        self.import_descriptor = import_descriptor or c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT
         self.module_va = module_va
         self.name_va = name_va
         self.first_thunk = first_thunk
@@ -61,7 +61,7 @@ class ImportFunction:
     def __init__(
         self,
         pe: PE,
-        thunkdata: c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64,
+        thunkdata: c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64 | None,
         name: str = "",
     ):
         self.pe = pe
@@ -78,6 +78,10 @@ class ImportFunction:
 
         if self._name:
             return self._name
+
+        if self.thunkdata is None:
+            # For the case thunkdata is not defined, such as during the `add`
+            return ""
 
         ordinal = self.thunkdata.u1.AddressOfData & self.pe._high_bit
 
@@ -109,12 +113,13 @@ class ImportManager:
 
     def __init__(self, pe: PE, section: PESection):
         self.pe = pe
+        self.image_size: int = self.pe.optional_header.SizeOfImage
         self.section = section
         self.import_directory_rva = 0
         self.import_data = bytearray()
         self.new_size_of_image = 0
         self.section_data = bytearray()
-        self.imports = OrderedDict()
+        self.imports: OrderedDict[str, ImportModule] = OrderedDict()
         self.thunks = []
 
         self.parse_imports()
@@ -135,11 +140,8 @@ class ImportManager:
                 modulename = c_pe.char[None](self.pe)
 
                 # Use the OriginalFirstThunk if available, FirstThunk otherwise
-                first_thunk = (
-                    import_descriptor.FirstThunk
-                    if not import_descriptor.OriginalFirstThunk
-                    else import_descriptor.OriginalFirstThunk
-                )
+                first_thunk = import_descriptor.OriginalFirstThunk or import_descriptor.FirstThunk
+
                 module = ImportModule(
                     name=modulename,
                     import_descriptor=import_descriptor,
@@ -153,9 +155,7 @@ class ImportManager:
 
                 self.imports[modulename.decode()] = module
 
-    def import_descriptors(
-        self, import_data: BinaryIO
-    ) -> Iterator[tuple[int, c_pe.IMAGE_IMPORT_DESCRIPTOR], None, None]:
+    def import_descriptors(self, import_data: BinaryIO) -> Iterator[tuple[int, c_pe.IMAGE_IMPORT_DESCRIPTOR]]:
         """Parse the import descriptors of the PE file.
 
         Args:
@@ -173,7 +173,7 @@ class ImportManager:
 
             yield import_data.tell(), import_descriptor
 
-    def parse_thunks(self, offset: int) -> Iterator[c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64, None, None]:
+    def parse_thunks(self, offset: int) -> Iterator[c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64]:
         """Parse the import thunks for every module.
 
         Args:
@@ -200,7 +200,7 @@ class ImportManager:
             functions: A `list` of function names belonging to the module.
         """
 
-        self.last_section = self.pe.patched_sections[next(reversed(self.pe.patched_sections))]
+        self.last_section = next(reversed(self.pe.patched_sections.values()))
 
         # Build a dummy import module
         self.imports[dllname] = ImportModule(
@@ -211,8 +211,9 @@ class ImportManager:
             first_thunk=0,
         )
         # Build the dummy module functions
-        for function in functions:
-            self.pe.imports[dllname].functions.append(ImportFunction(pe=self.pe, thunkdata=None, name=function))
+        self.imports[dllname].functions.extend(
+            ImportFunction(pe=self.pe, thunkdata=None, name=function) for function in functions
+        )
 
         # Rebuild the import table with the new import module and functions
         self.build_import_table()
@@ -230,7 +231,7 @@ class ImportManager:
         # Reset the known thunkdata
         self.thunks = []
 
-        import_descriptors = []
+        import_descriptors: list[c_pe.IMAGE_IMPORT_DESCRIPTOR] = []
         self.import_data = bytearray()
 
         for name, module in self.imports.items():
@@ -242,14 +243,14 @@ class ImportManager:
             first_thunk_rva = self._build_module_imports(functions=module.functions)
             import_descriptor = self._build_import_descriptor(
                 first_thunk_rva=first_thunk_rva,
-                name_rva=self.pe.optional_header.SizeOfImage + name_offset,
+                name_rva=self.image_size + name_offset,
             )
             import_descriptors.append(import_descriptor)
 
         datadirectory_size = 0
 
         # Take note of the RVA of the first import descriptor
-        import_rva = self.pe.optional_header.SizeOfImage + len(self.import_data)
+        import_rva = self.image_size + len(self.import_data)
         for descriptor in import_descriptors:
             self.import_data += descriptor.dumps()
             datadirectory_size += len(descriptor)
@@ -286,7 +287,7 @@ class ImportManager:
             self.import_data += struct.pack("<H", idx)  # Hint
             self.import_data += function.name.encode() + b"\x00"  # Name
 
-        first_thunk_rva = self.pe.optional_header.SizeOfImage + len(self.import_data)
+        first_thunk_rva = self.image_size + len(self.import_data)
 
         # Build the function thunkdata
         thunkdata = self._build_thunkdata(import_rvas=function_offsets)
@@ -304,27 +305,20 @@ class ImportManager:
             The thunkdata as a `bytes` object.
         """
 
-        thunkdata = bytearray()
-        for rva in import_rvas:
-            rva += self.pe.optional_header.SizeOfImage
-            thunkdata += (
-                struct.pack("<Q", rva)
-                if self.pe.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64
-                else struct.pack("<L", rva)
-            )
+        packing = "<Q" if self.pe.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64 else "<L"
+        _struct = struct.Struct(packing)
 
-        # Add the thunkdata delimiter
-        thunkdata += (
-            struct.pack("<Q", 0)
-            if self.pe.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64
-            else struct.pack("<L", 0)
-        )
+        thunkdata: list[bytes] = []
+        thunkdata.extend(_struct.pack(rva + self.image_size) for rva in import_rvas)
+        thunkdata.append(_struct.pack(0))
 
-        self.thunks.append(self.pe.image_thunk_data(thunkdata))
+        output = b"".join(thunkdata)
 
-        return thunkdata
+        self.thunks.append(self.pe.image_thunk_data(output))
 
-    def _build_import_descriptor(self, first_thunk_rva: int, name_rva: int) -> cstruct:
+        return output
+
+    def _build_import_descriptor(self, first_thunk_rva: int, name_rva: int) -> c_pe.IMAGE_IMPORT_DESCRIPTOR:
         """Function to build the import descriptor for the new import table.
 
         Args:
