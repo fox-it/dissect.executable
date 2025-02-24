@@ -21,7 +21,7 @@ class RelocationManager:
     def __init__(self, pe: PE, section: PESection):
         self.pe = pe
         self.section = section
-        self.relocations = []
+        self.relocations: list[dict] = []
 
         self.parse_relocations()
 
@@ -38,11 +38,7 @@ class RelocationManager:
 
             # Each entry consists of 2 bytes
             number_of_entries = (reloc_directory.SizeOfBlock - len(reloc_directory.dumps())) // 2
-            entries = []
-            for _ in range(number_of_entries):
-                entry = c_pe.uint16(reloc_data)
-                if entry:
-                    entries.append(entry)
+            entries = [entry for _ in range(number_of_entries) if (entry := c_pe.uint16(reloc_data))]
 
             self.relocations.append(
                 {
