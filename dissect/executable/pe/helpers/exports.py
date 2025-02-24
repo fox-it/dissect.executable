@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
+from dataclasses import dataclass
 from io import BytesIO
 from typing import TYPE_CHECKING
 
@@ -11,6 +12,7 @@ if TYPE_CHECKING:
     from dissect.executable.pe.pe import PE
 
 
+@dataclass
 class ExportFunction:
     """Object to store the information belonging to export functions.
 
@@ -20,27 +22,22 @@ class ExportFunction:
         name: The name of the function, if available.
     """
 
-    def __init__(self, ordinal: int, address: int, name: bytes = b""):
-        self.ordinal = ordinal
-        self.address = address
-        self.name = name
+    ordinal: int
+    address: int
+    name: bytes | None = b""
 
     def __str__(self) -> str:
-        return self.name.decode() if self.name else self.ordinal
+        return self.name.decode() if self.name else f"#{self.ordinal}"
 
     def __repr__(self) -> str:
-        return (
-            f"<Export {self.name.decode()}>"
-            if self.name
-            else f"<Export #{self.ordinal}>"
-        )
+        return f"<Export {self}>"
 
 
 class ExportManager:
     def __init__(self, pe: PE, section: PESection):
         self.pe = pe
         self.section = section
-        self.exports = OrderedDict()
+        self.exports: OrderedDict[str, ExportFunction] = OrderedDict()
 
         self.parse_exports()
 
@@ -52,9 +49,7 @@ class ExportManager:
         """
 
         export_entry_va = self.pe.directory_va(c_pe.IMAGE_DIRECTORY_ENTRY_EXPORT)
-        export_entry = BytesIO(
-            self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_EXPORT)
-        )
+        export_entry = BytesIO(self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_EXPORT))
         export_directory = c_pe.IMAGE_EXPORT_DIRECTORY(export_entry)
 
         # Seek to the offset of the export name
@@ -63,9 +58,7 @@ class ExportManager:
 
         # Create a list of adresses for the exported functions
         export_entry.seek(export_directory.AddressOfFunctions - export_entry_va)
-        export_addresses = c_pe.uint32[export_directory.NumberOfFunctions].read(
-            export_entry
-        )
+        export_addresses = c_pe.uint32[export_directory.NumberOfFunctions].read(export_entry)
         # Create a list of addresses for the exported functions that have associated names
         export_entry.seek(export_directory.AddressOfNames - export_entry_va)
         export_names = c_pe.uint32[export_directory.NumberOfNames].read(export_entry)
@@ -76,19 +69,17 @@ class ExportManager:
         # Iterate over the export functions and store the information
         export_entry.seek(export_directory.AddressOfFunctions - export_entry_va)
         for idx, address in enumerate(export_addresses):
+            _idx = idx + 1
+            key = str(_idx)
+            export_name: str | None = None
+
             if idx in export_ordinals:
-                export_entry.seek(
-                    export_names[export_ordinals.index(idx)] - export_entry_va
-                )
+                entry_offset = export_names[export_ordinals.index(idx)] - export_entry_va
+                export_entry.seek(entry_offset)
                 export_name = c_pe.char[None](export_entry)
-                self.exports[export_name.decode()] = ExportFunction(
-                    ordinal=idx + 1, address=address, name=export_name
-                )
-            else:
-                export_name = None
-                self.exports[str(idx + 1)] = ExportFunction(
-                    ordinal=idx + 1, address=address, name=export_name
-                )
+                key = export_name.decode()
+
+            self.exports[key] = ExportFunction(ordinal=export_directory.Base + _idx, address=address, name=export_name)
 
     def add(self) -> None:
         raise NotImplementedError
