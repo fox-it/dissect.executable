@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from io import BytesIO
+from itertools import chain
+from textwrap import indent
 from typing import TYPE_CHECKING
 
 from dissect.executable.exception import ResourceException
@@ -30,17 +32,19 @@ class ResourceManager:
         self.pe = pe
         self.section = section
         self.resources: OrderedDict[str, Resource] = OrderedDict()
-        self.raw_resources = []
+        self.raw_resources: list[dict] = []
 
-        self.parse_rsrc()
+        self.parse()
 
-    def parse_rsrc(self) -> None:
+    def parse(self) -> None:
         """Parse the resource directory entry of the PE file."""
 
-        rsrc_data = BytesIO(self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_RESOURCE))
-        self.resources = self._read_resource(rc_type="_root", data=rsrc_data, offset=0, level=1)
+        rsrc_data = BytesIO(self.section.data)
+        self.resources = self._read_resource(data=rsrc_data, offset=0, level=1)
 
-    def _read_entries(self, data: BinaryIO, directory: cstruct) -> list[c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY]:
+    def _read_entries(
+        self, data: BinaryIO, directory: c_pe.IMAGE_RESOURCE_DIRECTORY
+    ) -> list[c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY]:
         """Read the entries within the resource directory.
 
         Args:
@@ -59,7 +63,7 @@ class ResourceManager:
             entries.append(entry)
         return entries
 
-    def _handle_data_entry(self, data: BinaryIO, entry: cstruct, rc_type: str) -> Resource:
+    def _handle_data_entry(self, data: BinaryIO, entry: c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY, rc_type: str) -> Resource:
         """Handle the data entry of a resource. This is the actual data associated with the directory entry.
 
         Args:
@@ -94,9 +98,7 @@ class ResourceManager:
         )
         return rsrc
 
-    def _read_resource(
-        self, data: BinaryIO, offset: int, rc_type: str, level: int = 1
-    ) -> OrderedDict[str, Resource | dict[str, Resource]]:
+    def _read_resource(self, data: BinaryIO, offset: int, level: int = 1) -> OrderedDict[str, Resource]:
         """Recursively read the resources within the PE file.
 
         Each resource is added to the dictionary that is available to the user, as well as a list of
@@ -120,28 +122,32 @@ class ResourceManager:
 
         entries = self._read_entries(data, directory)
 
+        _rc_type: str = ""
+
         for entry in entries:
-            if level == 1:
-                rc_type = c_pe.ResourceID(entry.Id).name
-            else:
-                if entry.NameIsString:
-                    data.seek(entry.NameOffset)
-                    name_len = c_pe.uint16(data)
-                    rc_type = c_pe.wchar[name_len](data)
-                else:
-                    rc_type = str(entry.Id)
+            _rc_type = self._rc_type(entry, data, level)
 
             if entry.DataIsDirectory:
-                resource[rc_type] = self._read_resource(
+                resource[_rc_type] = self._read_resource(
                     data=data,
                     offset=entry.OffsetToDirectory,
-                    rc_type=rc_type,
                     level=level + 1,
                 )
             else:
-                resource[rc_type] = self._handle_data_entry(data=data, entry=entry, rc_type=rc_type)
+                resource[_rc_type] = self._handle_data_entry(data=data, entry=entry, rc_type=_rc_type)
 
         return resource
+
+    def _rc_type(self, entry: c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY, data: BinaryIO, level: int = 1) -> str:
+        if level == 1:
+            return c_pe.ResourceID(entry.Id).name
+
+        if entry.NameIsString:
+            data.seek(entry.NameOffset)
+            name_len = c_pe.uint16(data)
+            return c_pe.wchar[name_len](data)
+
+        return str(entry.Id)
 
     def get_resource(self, name: str) -> Resource:
         """Retrieve the resource by name.
@@ -186,12 +192,12 @@ class ResourceManager:
         """
 
         for resource in resources.values():
-            if type(resource) is not OrderedDict:
-                yield resource
-            else:
+            if isinstance(resource, OrderedDict):
                 yield from self.parse_resources(resources=resource)
+            else:
+                yield resource
 
-    def show_resource_tree(self, resources: dict, indent: int = 0) -> None:
+    def show_resource_tree(self, resources: dict, indentation: int = 0) -> None:
         """Print the resources within the PE as a tree.
 
         Args:
@@ -200,11 +206,13 @@ class ResourceManager:
         """
 
         for name, resource in resources.items():
-            if type(resource) is not OrderedDict:
-                print(f"{' ' * indent} - name: {name} ID: {resource.rsrc_id}")
+            prefix = " " * indentation
+
+            if isinstance(resource, OrderedDict):
+                print(indent(f"+ name: {name}", prefix=prefix))
+                self.show_resource_tree(resources=resource, indentation=indentation + 1)
             else:
-                print(f"{' ' * indent} + name: {name}")
-                self.show_resource_tree(resources=resource, indent=indent + 1)
+                print(indent(f"- name: {name} ID: {resource.rsrc_id}", prefix=prefix))
 
     def show_resource_info(self, resources: dict) -> None:
         """Print basic information about the resource as well as the header.
@@ -214,18 +222,18 @@ class ResourceManager:
         """
 
         for name, resource in resources.items():
-            if type(resource) is not OrderedDict:
+            if isinstance(resource, OrderedDict):
+                self.show_resource_info(resources=resource)
+            else:
                 print(
                     f"* resource: {name} offset=0x{resource.offset:02x} size=0x{resource.size:02x} header: {resource.data[:64]}"  # noqa: E501
                 )
-            else:
-                self.show_resource_info(resources=resource)
 
-    def add_resource(self, name: str, data: bytes) -> None:
+    def add(self, name: str, data: bytes) -> None:
         # TODO
         raise NotImplementedError
 
-    def delete_resource(self, name: str) -> None:
+    def delete(self, name: str) -> None:
         # TODO
         raise NotImplementedError
 
@@ -237,14 +245,14 @@ class ResourceManager:
         """
 
         new_size = 0
-        section_data = b""
 
-        for idx, resource in enumerate(self.parse_resources(resources=self.pe.resources)):
-            if idx == 0:
-                # Use the offset of the first resource to account for the size of the directory header
-                header_size = resource.offset - self.section.virtual_address
-                section_data = self.section.data[:header_size]
+        resource_iter = iter(self.parse_resources(resources=self.resources))
+        first_resource = next(resource_iter)
 
+        header_size = first_resource.offset - self.section.virtual_address
+        section_data = self.section.data[:header_size]
+
+        for resource in chain([first_resource], resource_iter):
             # Take note of the previous offset and size so we can update any of these values after changing the data
             # within the resource
             prev_offset = resource.offset
