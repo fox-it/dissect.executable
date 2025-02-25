@@ -91,16 +91,6 @@ class PE:
         # Parsing the directories present in the PE
         self.parse_directories()
 
-    def _valid(self) -> bool:
-        """Check if the PE file is a valid PE file. By looking for the "PE" signature at the offset of e_lfanew.
-
-        Returns:
-            `True` if the file is a valid PE file, `False` otherwise.
-        """
-
-        self.pe_file.seek(self.mz_header.e_lfanew)
-        return c_pe.uint32(self.pe_file) == 0x4550
-
     def is64bit(self) -> bool:
         return self.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64
 
@@ -118,8 +108,13 @@ class PE:
         """
 
         self.mz_header = c_pe.IMAGE_DOS_HEADER(self.pe_file)
+        if self.mz_header.e_magic != 0x5A4D:
+            raise InvalidPE("File is not a valid PE file, MZ header has wrong signature.")
 
-        if not self._valid():
+        self.pe_file.seek(self.mz_header.e_lfanew)
+        nt_signature = c_pe.uint32(self.pe_file)
+
+        if nt_signature != 0x4550:
             raise InvalidPE("file is not a valid PE file")
 
         self.file_header = c_pe.IMAGE_FILE_HEADER(self.pe_file)
@@ -129,7 +124,7 @@ class PE:
 
         # Set the architecture specific settings
         self._check_architecture()
-        if self.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64:
+        if self.is64bit():
             self.nt_headers = c_pe.IMAGE_NT_HEADERS64(self.pe_file)
         else:
             self.nt_headers = c_pe.IMAGE_NT_HEADERS(self.pe_file)

@@ -8,13 +8,6 @@ from dissect.executable.pe.pe import PE
 from .util import data_file
 
 
-def test_pe_valid_signature() -> None:
-    with data_file("testexe.exe").open("rb") as pe_fh:
-        pe = PE(pe_file=pe_fh)
-
-    assert pe._valid() is True
-
-
 def test_pe_invalid_signature() -> None:
     with pytest.raises(InvalidPE):
         PE(BytesIO(b"MZ" + b"\x00" * 400))
