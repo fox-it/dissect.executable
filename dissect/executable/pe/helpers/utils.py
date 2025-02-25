@@ -1,3 +1,18 @@
+from __future__ import annotations
+
+import struct
+from functools import lru_cache
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from dissect.executable.pe import PE, PESection
+
+
+@lru_cache
+def create_struct(packing: str) -> struct.Struct:
+    return struct.Struct(packing)
+
+
 def align_data(data: bytes, blocksize: int) -> bytes:
     """Align the new data according to the file alignment as specified in the PE header.
 
@@ -10,11 +25,7 @@ def align_data(data: bytes, blocksize: int) -> bytes:
     """
 
     needs_alignment = len(data) % blocksize
-    return (
-        data
-        if not needs_alignment
-        else data + ((blocksize - needs_alignment) * b"\x00")
-    )
+    return data if not needs_alignment else data + ((blocksize - needs_alignment) * b"\x00")
 
 
 def align_int(integer: int, blocksize: int) -> int:

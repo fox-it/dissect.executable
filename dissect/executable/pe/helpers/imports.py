@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import struct
 from collections import OrderedDict
 from io import BytesIO
 from typing import TYPE_CHECKING, BinaryIO
 
 from dissect.executable.pe.c_pe import c_pe
 from dissect.executable.pe.helpers import utils
+from dissect.executable.pe.helpers.utils import create_struct
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -281,10 +281,10 @@ class ImportManager:
         """
 
         function_offsets = []
-
+        _hint_struct = create_struct("<H")
         for idx, function in enumerate(functions):
             function_offsets.append(len(self.import_data))
-            self.import_data += struct.pack("<H", idx)  # Hint
+            self.import_data += _hint_struct.pack(idx)  # Hint
             self.import_data += function.name.encode() + b"\x00"  # Name
 
         first_thunk_rva = self.image_size + len(self.import_data)
@@ -306,7 +306,7 @@ class ImportManager:
         """
 
         packing = "<Q" if self.pe.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64 else "<L"
-        _struct = struct.Struct(packing)
+        _struct = create_struct(packing)
 
         thunkdata: list[bytes] = []
         thunkdata.extend(_struct.pack(rva + self.image_size) for rva in import_rvas)
@@ -314,7 +314,7 @@ class ImportManager:
 
         output = b"".join(thunkdata)
 
-        self.thunks.append(self.pe.image_thunk_data(output))
+        self.thunks.append(self._thunk_data(output))
 
         return output
 
