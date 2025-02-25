@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import struct
 from io import BytesIO
 from typing import TYPE_CHECKING
@@ -157,7 +158,7 @@ class Patcher:
                     thunkdata = function.thunkdata
                     # Check if we're dealing with an ordinal entry, if it's an ordinal entry we don't need
                     # to patch since it's not an RVA
-                    if thunkdata.u1.AddressOfData & self.pe._high_bit:
+                    if function.ordinal:
                         patched_thunkdata += thunkdata.dumps()
                         continue
 
@@ -300,7 +301,7 @@ class Patcher:
             return
 
         self.seek(directory_va)
-        tls_directory = self.pe.image_tls_directory(self.patched_pe)
+        tls_directory = self.pe.tls_mgr._tls_directory(self.patched_pe)
 
         image_base = self.pe.optional_header.ImageBase
 

@@ -21,22 +21,35 @@ class TLSManager:
         self.pe = pe
         self.section = section
         self.callbacks = []
-        self.tls = None
-        self._data = b""
+        self.tls: c_pe._IMAGE_TLS_DIRECTORY32 | c_pe._IMAGE_TLS_DIRECTORY64 = None
 
+        self._read_address: type[c_pe.uint64 | c_pe.uint32] = None
+        self._tls_directory: type[c_pe._IMAGE_TLS_DIRECTORY32 | c_pe._IMAGE_TLS_DIRECTORY64] = None
+        self._data = b""
+        self._image_base = pe.optional_header.ImageBase
+
+        self.set_architecture(pe)
         self.parse_tls()
+
+    def set_architecture(self, pe: PE) -> None:
+        if pe.is64bit():
+            self._read_address = c_pe.uint64
+            self._tls_directory = c_pe._IMAGE_TLS_DIRECTORY64
+        else:
+            self._read_address = c_pe.uint32
+            self._tls_directory = c_pe._IMAGE_TLS_DIRECTORY32
 
     def parse_tls(self) -> None:
         """Parse the TLS directory entry of the PE file when present."""
 
-        tls_data = BytesIO(self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_TLS))
-        self.tls = self.pe.image_tls_directory(tls_data)
+        tls_data = BytesIO(self.section.data)
+        self.tls = self._tls_directory(tls_data)
 
-        self.pe.seek(self.tls.AddressOfCallBacks - self.pe.optional_header.ImageBase)
+        self.pe.seek(self.tls.AddressOfCallBacks - self._image_base)
 
         # Parse the TLS callback addresses if present
         while True:
-            callback_address = self.pe.read_address(self.pe)
+            callback_address = self._read_address(self.pe)
             if not callback_address:
                 break
             self.callbacks.append(callback_address)
@@ -72,7 +85,7 @@ class TLSManager:
         """
 
         return self.pe.virtual_read(
-            address=self.tls.StartAddressOfRawData - self.pe.optional_header.ImageBase,
+            address=self.tls.StartAddressOfRawData - self._image_base,
             size=self.size,
         )
 
@@ -105,7 +118,7 @@ class TLSManager:
         section_data.write(self.tls.dumps())
 
         # Write the new TLS data to the section
-        start_address_rva = self.tls.StartAddressOfRawData - self.pe.optional_header.ImageBase
+        start_address_rva = self.tls.StartAddressOfRawData - self._image_base
         start_address_section_offset = start_address_rva - self.section.virtual_address
         section_data.seek(start_address_section_offset)
         section_data.write(self._data)

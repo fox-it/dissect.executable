@@ -101,6 +101,9 @@ class PE:
         self.pe_file.seek(self.mz_header.e_lfanew)
         return c_pe.uint32(self.pe_file) == 0x4550
 
+    def is64bit(self) -> bool:
+        return self.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64
+
     def parse_headers(self) -> None:
         """Function to parse the basic PE headers:
             - DOS header
@@ -125,7 +128,7 @@ class PE:
         self.pe_file.seek(image_nt_headers_offset)
 
         # Set the architecture specific settings
-        self._set_pe_architecture()
+        self._check_architecture()
         if self.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64:
             self.nt_headers = c_pe.IMAGE_NT_HEADERS64(self.pe_file)
         else:
@@ -133,24 +136,16 @@ class PE:
 
         self.optional_header = self.nt_headers.OptionalHeader
 
-    def _set_pe_architecture(self) -> None:
-        """Set the architecture specific settings. Some of the structs are architecture specific.
+    def _check_architecture(self) -> None:
+        """Check whether the architecture belonging to the binary is one we support.
 
         Raises:
             InvalidArchitecture if the architecture is not supported or unknown.
         """
-
-        if self.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64:
-            self.image_thunk_data = c_pe.IMAGE_THUNK_DATA64
-            self.image_tls_directory = c_pe.IMAGE_TLS_DIRECTORY64
-            self._high_bit = 1 << 63
-            self.read_address = c_pe.uint64
-        elif self.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_I386:
-            self.image_thunk_data = c_pe.IMAGE_THUNK_DATA32
-            self.image_tls_directory = c_pe.IMAGE_TLS_DIRECTORY32
-            self._high_bit = 1 << 31
-            self.read_address = c_pe.uint32
-        else:
+        if self.file_header.Machine not in [
+            c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64,
+            c_pe.MachineType.IMAGE_FILE_MACHINE_I386,
+        ]:
             raise InvalidArchitecture(f"Invalid architecture found: {self.file_header.Machine:02x}")
 
     def parse_section_header(self) -> None:
