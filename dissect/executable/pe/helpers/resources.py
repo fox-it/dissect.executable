@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
+from dataclasses import dataclass
 from io import BytesIO
 from itertools import chain
 from textwrap import indent
@@ -20,7 +21,14 @@ if TYPE_CHECKING:
     from dissect.executable.pe.pe import PE
 
 
-class ResourceManager:
+@dataclass
+class RawResource:
+    offset: int
+    entry: c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY | c_pe.IMAGE_RESOURCE_DIRECTORY
+    data_offset: int
+    data: bytes | None = None
+    resource: Resource | None = None
+
     """Base class to perform actions regarding the resources within the PE file.
 
     Args:
@@ -32,7 +40,7 @@ class ResourceManager:
         self.pe = pe
         self.section = section
         self.resources: OrderedDict[str, Resource] = OrderedDict()
-        self.raw_resources: list[dict] = []
+        self.raw_resources: list[RawResource] = []
 
         self.parse()
 
@@ -59,7 +67,13 @@ class ResourceManager:
         for _ in range(directory.NumberOfNamedEntries + directory.NumberOfIdEntries):
             entry_offset = data.tell()
             entry = c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY(data)
-            self.raw_resources.append({"offset": entry_offset, "entry": entry, "data_offset": entry_offset})
+            self.raw_resources.append(
+                RawResource(
+                    offset=entry_offset,
+                    entry=entry,
+                    data_offset=entry_offset,
+                )
+            )
             entries.append(entry)
         return entries
 
@@ -88,13 +102,13 @@ class ResourceManager:
             rc_type=rc_type,
         )
         self.raw_resources.append(
-            {
-                "offset": entry.OffsetToDirectory,
-                "entry": data_entry,
-                "data": _data,
-                "data_offset": raw_offset,
-                "resource": rsrc,
-            }
+            RawResource(
+                offset=entry.OffsetToDirectory,
+                entry=data_entry,
+                data=_data,
+                data_offset=raw_offset,
+                resource=rsrc,
+            )
         )
         return rsrc
 
@@ -118,7 +132,13 @@ class ResourceManager:
 
         data.seek(offset)
         directory = c_pe.IMAGE_RESOURCE_DIRECTORY(data)
-        self.raw_resources.append({"offset": offset, "entry": directory, "data_offset": offset})
+        self.raw_resources.append(
+            RawResource(
+                offset=offset,
+                entry=directory,
+                data_offset=offset,
+            )
+        )
 
         entries = self._read_entries(data, directory)
 
@@ -386,19 +406,19 @@ class Resource:
         prev_offset = 0
         prev_size = 0
 
-        for rsrc_entry in sorted(self.pe.raw_resources, key=lambda rsrc: rsrc["data_offset"]):
-            entry_offset = rsrc_entry["offset"]
-            entry = rsrc_entry["entry"]
+        for rsrc_entry in sorted(self.pe.raw_resources, key=lambda rsrc: rsrc.data_offset):
+            entry_offset = rsrc_entry.offset
+            entry = rsrc_entry.entry
             if isinstance(entry, c_pe.IMAGE_RESOURCE_DATA_ENTRY):
-                rsrc_obj = rsrc_entry["resource"]
-                data_offset = rsrc_entry["data_offset"]
+                rsrc_obj = rsrc_entry.resource
+                data_offset = rsrc_entry.data_offset
 
                 # Normally the data is separated by a null byte, increment the new offset by 1
                 new_data_offset = prev_offset + prev_size
                 # if new_data_offset and (new_data_offset > data_offset or new_data_offset < data_offset):
                 if new_data_offset and new_data_offset != data_offset:
                     data_offset = new_data_offset
-                    rsrc_entry["data_offset"] = data_offset
+                    rsrc_entry.data_offset = data_offset
                     rsrc_obj.offset = self.section.virtual_address + data_offset
 
                 data = rsrc_obj.data

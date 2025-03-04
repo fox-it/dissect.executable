@@ -276,13 +276,13 @@ class Patcher:
         section_data = BytesIO()
         self.seek(directory_va)
 
-        for rsrc_entry in sorted(self.pe.raw_resources, key=lambda rsrc: rsrc["data_offset"]):
-            entry_offset = rsrc_entry["offset"]
-            entry = rsrc_entry["entry"]
+        for rsrc_entry in sorted(self.pe.raw_resources, key=lambda rsrc: rsrc.data_offset):
+            entry_offset = rsrc_entry.offset
+            entry = rsrc_entry.entry
 
             if isinstance(entry, c_pe.IMAGE_RESOURCE_DATA_ENTRY):
-                rsrc_obj = rsrc_entry["resource"]
-                data_offset = rsrc_entry["data_offset"]
+                rsrc_obj = rsrc_entry.resource
+                data_offset = rsrc_entry.data_offset
 
                 # Update the offset of the entry to match with the new directory VA
                 rsrc_obj.offset = directory_va + data_offset
