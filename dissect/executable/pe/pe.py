@@ -26,10 +26,10 @@ from dissect.executable.pe.helpers import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
 
     from dissect.cstruct.cstruct import cstruct
-    from dissect.cstruct.types.enum import EnumInstance
+    from dissect.cstruct.types.enum import Enum
 
     from dissect.executable.pe.helpers.resources import Resource
 
@@ -51,10 +51,10 @@ class PE:
         # Make sure we reset any kind of pointers within the PE file before continueing
         self.pe_file.seek(0)
 
-        self.mz_header = None
-        self.file_header = None
-        self.nt_headers = None
-        self.optional_header = None
+        self.mz_header: c_pe.IMAGE_DOS_HEADER = None
+        self.nt_headers: c_pe.IMAGE_NT_HEADERS | c_pe.IMAGE_NT_HEADERS64 = None
+        self.file_header: c_pe.IMAGE_FILE_HEADER = None
+        self.optional_header: c_pe.IMAGE_OPTIONAL_HEADER | c_pe.IMAGE_OPTIONAL_HEADER64 = None
 
         self.section_header_offset = 0
         self.last_section_offset = 0
@@ -65,8 +65,8 @@ class PE:
         self.imports: OrderedDict[str, imports.ImportModule] = None
         self.exports: OrderedDict[str, exports.ExportFunction] = None
         self.resources: OrderedDict[str, resources.Resource] = None
-        self.raw_resources = None
-        self.relocations: list[dict] = None
+        self.raw_resources: list[resources.RawResource] = []
+        self.relocations: list[relocations.Relocation] = []
         self.tls_callbacks = None
 
         self.directories = OrderedDict()
@@ -77,12 +77,10 @@ class PE:
         # The offset of the section header is always at the end of the NT headers
         self.section_header_offset = self.pe_file.tell()
 
-        self.imagebase = self.optional_header.ImageBase
-        self.file_alignment = self.optional_header.FileAlignment
-        self.section_alignment = self.optional_header.SectionAlignment
-
-        self.base_address = self.optional_header.ImageBase
-
+        self.imagebase = self.nt_headers.OptionalHeader.ImageBase
+        self.file_alignment = self.nt_headers.OptionalHeader.FileAlignment
+        self.section_alignment = self.nt_headers.OptionalHeader.SectionAlignment
+        self.base_address = self.nt_headers.OptionalHeader.ImageBase
         self.timestamp = datetime.fromtimestamp(self.file_header.TimeDateStamp, tz=timezone.utc)
 
         # Parse the section header
@@ -159,6 +157,13 @@ class PE:
 
         self.last_section_offset = self.sections[next(reversed(self.sections))].offset
 
+    def _section_in_range(self, address: int, values: Iterable[sections.PESection]) -> sections.PESection | None:
+        for section in values:
+            if section.virtual_address <= address < section.virtual_address + section.virtual_size:
+                return section
+
+        return None
+
     def section(self, va: int = 0, name: str = "") -> sections.PESection | None:
         """Function to retrieve a section based on the given virtual address or name.
 
@@ -170,15 +175,10 @@ class PE:
             A `PESection` object.
         """
 
-        if not name:
-            for section in self.sections.values():
-                if va in range(
-                    section.virtual_address,
-                    section.virtual_address + section.virtual_size,
-                ):
-                    return section
-            return None
-        return self.sections[name]
+        if name:
+            return self.sections[name]
+
+        return self._section_in_range(va, self.sections.values())
 
     def patched_section(self, va: int = 0, name: str = "") -> sections.PESection | None:
         """Function to retrieve a patched section based on the given virtual address or name.
@@ -191,15 +191,10 @@ class PE:
             A `PESection` object.
         """
 
-        if not name:
-            for section in self.patched_sections.values():
-                if va in range(
-                    section.virtual_address,
-                    section.virtual_address + section.virtual_size,
-                ):
-                    return section
-            return None
-        return self.patched_sections[name]
+        if name:
+            return self.patched_sections[name]
+
+        return self._section_in_range(va, self.patched_sections.values())
 
     def datadirectory_section(self, index: int) -> sections.PESection:
         """Return the section that contains the given virtual address.
@@ -211,10 +206,9 @@ class PE:
             The section that contains the given virtual address.
         """
 
-        va = self.directory_va(index=index)
-        for section in self.patched_sections.values():
-            if va >= section.virtual_address and va < section.virtual_address + section.virtual_size:
-                return section
+        va = self.directory_entry_rva(index=index)
+        if section := self._section_in_range(va, self.patched_sections.values()):
+            return section
 
         raise InvalidVA(f"VA not found in sections: {va:#04x}")
 
@@ -263,7 +257,7 @@ class PE:
                 self.tls_mgr = tls.TLSManager(pe=self, section=section)
                 self.tls_callbacks = self.tls_mgr.callbacks
 
-    def get_resource_type(self, rsrc_id: str | EnumInstance) -> Iterator[Resource]:
+    def get_resource_type(self, rsrc_id: str | Enum) -> Iterator[Resource]:
         """Yields a generator containing all of the nodes within the resources that contain the requested ID.
 
         The ID can be either given by name or its value.
@@ -293,10 +287,8 @@ class PE:
         if self.virtual:
             return address
 
-        for section in self.patched_sections.values():
-            max_address = section.virtual_address + section.virtual_size
-            if address >= section.virtual_address and address < max_address:
-                return section.pointer_to_raw_data + (address - section.virtual_address)
+        if section := self._section_in_range(address, self.patched_sections.values()):
+            return section.pointer_to_raw_data + (address - section.virtual_address)
 
         raise InvalidVA(f"VA not found in sections: {address:#04x}")
 
@@ -311,8 +303,7 @@ class PE:
         """
 
         for section in self.patched_sections.values():
-            max_address = section.pointer_to_raw_data + section.size_of_raw_data
-            if offset >= section.pointer_to_raw_data and offset < max_address:
+            if section.pointer_to_raw_data <= offset < section.pointer_to_raw_data + section.size_of_raw_data:
                 return section.virtual_address + (offset - section.pointer_to_raw_data)
 
         raise InvalidAddress(f"Raw address not found in sections: {offset:#04x}")
@@ -401,10 +392,9 @@ class PE:
         print(self.patched_sections)
 
         # Update the section data
-        for section in self.patched_sections.values():
-            if section.virtual_address <= offset and section.virtual_address + section.virtual_size >= offset:
-                self.seek(address=section.virtual_address)
-                section.data = self.read(size=section.virtual_size)
+        if section := self._section_in_range(offset, self.patched_sections.values()):
+            self.seek(address=section.virtual_address)
+            section.data = self.read(size=section.virtual_size)
 
     def read_image_directory(self, index: int) -> bytes:
         """Read the PE file image directory entry of a given index.
@@ -419,7 +409,7 @@ class PE:
         directory_entry = self.optional_header.DataDirectory[index]
         return self.virtual_read(address=directory_entry.VirtualAddress, size=directory_entry.Size)
 
-    def directory_va(self, index: int) -> int:
+    def directory_entry_rva(self, index: int) -> int:
         """Returns the virtual address of a directory given its index.
 
         Args:
@@ -451,7 +441,7 @@ class PE:
         """
 
         debug_directory_entry = self.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_DEBUG)
-        image_directory_size = len(c_pe.IMAGE_DEBUG_DIRECTORY)
+        image_directory_size = c_pe.IMAGE_DEBUG_DIRECTORY.size
 
         for _ in range(len(debug_directory_entry) // image_directory_size):
             entry = c_pe.IMAGE_DEBUG_DIRECTORY(debug_directory_entry)
@@ -461,14 +451,14 @@ class PE:
                 return c_cv_info.CV_INFO_PDB70(dbg_entry)
         return None
 
-    def get_section(self, segment_index: int) -> tuple[str, sections.PESection]:
+    def get_section(self, segment_index: int) -> sections.PESection:
         """Retrieve the section of the PE by index.
 
         Args:
             segment_index: The segment to retrieve based on the order within the PE.
 
         Returns:
-            A `tuple` contianing the section name and attributes as `PESection`.
+            A `PESection` corresponding to the segment_index.
         """
 
         sections = list(self.sections.items())

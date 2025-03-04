@@ -48,7 +48,7 @@ class ExportManager:
         name (if available), the call ordinal, and the function address.
         """
 
-        export_entry_va = self.pe.directory_va(c_pe.IMAGE_DIRECTORY_ENTRY_EXPORT)
+        export_entry_va = self.pe.directory_entry_rva(c_pe.IMAGE_DIRECTORY_ENTRY_EXPORT)
         export_entry = BytesIO(self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_EXPORT))
         export_directory = c_pe.IMAGE_EXPORT_DIRECTORY(export_entry)
 
