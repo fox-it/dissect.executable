@@ -143,52 +143,58 @@ class Patcher:
             import_descriptor = module.import_descriptor
             patched_thunkdata = bytearray()
 
-            if import_descriptor.Name != 0xFFFFF800 and import_descriptor.Name != 0x0:
-                old_first_thunk = import_descriptor.FirstThunk
+            if import_descriptor.Name in [0xFFFFF800, 0x0]:
+                continue
 
-                first_thunk_offset = old_first_thunk - original_directory_va
-                import_descriptor.FirstThunk = abs(directory_va + first_thunk_offset)
+            old_first_thunk = import_descriptor.FirstThunk
 
-                import_descriptor.OriginalFirstThunk = import_descriptor.FirstThunk
+            first_thunk_offset = old_first_thunk - original_directory_va
+            import_descriptor.FirstThunk = abs(directory_va + first_thunk_offset)
 
-                name_offset = import_descriptor.Name - original_directory_va
-                import_descriptor.Name = abs(directory_va + name_offset)
+            import_descriptor.OriginalFirstThunk = import_descriptor.FirstThunk
 
-                for function in module.functions:
-                    thunkdata = function.thunkdata
-                    # Check if we're dealing with an ordinal entry, if it's an ordinal entry we don't need
-                    # to patch since it's not an RVA
-                    if function.ordinal:
-                        patched_thunkdata += thunkdata.dumps()
-                        continue
+            name_offset = import_descriptor.Name - original_directory_va
+            import_descriptor.Name = abs(directory_va + name_offset)
 
-                    # Check the original RVA associated with the AddressOfData field in the thunkdata, retrieve the
-                    # original VA
-                    # and use it to also select the patched virtual address of this section that the RVA is located in
-                    for name, section in self.pe.sections.items():
-                        if thunkdata.u1.AddressOfData in range(
-                            section.virtual_address,
-                            section.virtual_address + section.virtual_size,
-                        ):
-                            virtual_address = section.virtual_address
-                            new_virtual_address = self.pe.patched_sections[name].virtual_address
-                            break
-
-                    # Calculate the offset using the VA of the section and update the thunkdata
-                    va_offset = thunkdata.u1.AddressOfData - virtual_address
-                    new_thunkdata = new_virtual_address + va_offset
-                    thunkdata.u1.AddressOfData = new_thunkdata
-                    thunkdata.u1.ForwarderString = new_thunkdata
-                    thunkdata.u1.Function = new_thunkdata
-                    thunkdata.u1.Ordinal = new_thunkdata
-
+            for function in module.functions:
+                thunkdata = function.thunkdata
+                # Check if we're dealing with an ordinal entry, if it's an ordinal entry we don't need
+                # to patch since it's not an RVA
+                if function.ordinal:
                     patched_thunkdata += thunkdata.dumps()
+                    continue
 
-                # Write the thunk data into the patched PE
-                self.seek(import_descriptor.FirstThunk)
-                self.patched_pe.write(patched_thunkdata)
+                # Check the original RVA associated with the AddressOfData field in the thunkdata, retrieve the
+                # original VA
+                # and use it to also select the patched virtual address of this section that the RVA is located in
+                for name, section in self.pe.sections.items():
+                    if (
+                        section.virtual_address
+                        <= thunkdata.u1.AddressOfData
+                        < section.virtual_address + section.virtual_size
+                    ):
+                        virtual_address = section.virtual_address
+                        new_virtual_address = self.pe.patched_sections[name].virtual_address
+                        break
 
-                patched_import_data += import_descriptor.dumps()
+                # Calculate the offset using the VA of the section and update the thunkdata
+                va_offset = thunkdata.u1.AddressOfData - virtual_address
+                new_address = new_virtual_address + va_offset
+
+                tmp_thunkdata = copy.deepcopy(thunkdata)
+
+                tmp_thunkdata.u1.AddressOfData = new_address
+                tmp_thunkdata.u1.ForwarderString = new_address
+                tmp_thunkdata.u1.Function = new_address
+                tmp_thunkdata.u1.Ordinal = new_address
+
+                patched_thunkdata += tmp_thunkdata.dumps()
+
+            # Write the thunk data into the patched PE
+            self.seek(import_descriptor.FirstThunk)
+            self.patched_pe.write(patched_thunkdata)
+
+            patched_import_data += import_descriptor.dumps()
 
         self.seek(directory_va)
         self.patched_pe.write(patched_import_data)
