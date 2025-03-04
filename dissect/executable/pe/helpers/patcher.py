@@ -242,8 +242,10 @@ class Patcher:
             new_address = self.pe.patched_sections[section.name].virtual_address + address_offset
             new_function_rvas.append(new_address)
 
+        rva_struct = utils.create_struct("<I")
+
         for rva in new_function_rvas:
-            function_rvas += struct.pack("<I", rva)
+            function_rvas += rva_struct.pack(rva)
 
         self.seek(export_directory.AddressOfFunctions)
         self.patched_pe.write(function_rvas)
@@ -260,7 +262,7 @@ class Patcher:
             new_name_rvas.append(new_address)
 
         for name_rva in new_name_rvas:
-            name_rvas += struct.pack("<I", name_rva)
+            name_rvas += rva_struct.pack(name_rva)
 
         self.seek(export_directory.AddressOfNames)
         self.patched_pe.write(name_rvas)
