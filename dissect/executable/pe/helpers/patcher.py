@@ -23,7 +23,6 @@ class Patcher:
         self.patched_pe = BytesIO()
         self.functions = []
 
-    @property
     def build(self) -> BytesIO:
         """Build the patched PE file.
 
@@ -132,6 +131,8 @@ class Patcher:
         # Get the original VA of the section the import directory is residing in, this value is used to calculate the
         # new RVA's
         section = self.pe.patched_section(va=directory_va)
+        if section is None:
+            return
         directory_offset = directory_va - section.virtual_address
         original_directory_va = self.pe.sections[section.name].virtual_address + directory_offset
 
@@ -203,6 +204,9 @@ class Patcher:
         # Get the original VA of the section the import directory is residing in, this value is used to calculate the
         # new RVA's
         section = self.pe.patched_section(va=directory_va)
+        if section is None:
+            return
+
         directory_offset = directory_va - section.virtual_address
         original_directory_va = self.pe.sections[section.name].virtual_address + directory_offset
 

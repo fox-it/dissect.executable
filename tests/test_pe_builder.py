@@ -18,15 +18,9 @@ def test_build_new_x86_pe_exe() -> None:
 
     pe.pe_file.seek(len(pe.mz_header))
     stub = pe.pe_file.read(pe.mz_header.e_lfanew - len(pe.mz_header))
-    assert (
-        stub[14 : 73 - 4] == b"This program is made with dissect.pe <3 kusjesvanSRT <3"
-    )
+    assert stub[14 : 73 - 4] == b"This program is made with dissect.pe <3 kusjesvanSRT <3"
 
-    assert (
-        pe.file_header.Characteristics
-        & c_pe.ImageCharacteristics.IMAGE_FILE_32BIT_MACHINE
-        == 0x0100
-    )
+    assert pe.file_header.Characteristics & c_pe.ImageCharacteristics.IMAGE_FILE_32BIT_MACHINE
 
 
 def test_build_new_x64_pe_exe() -> None:
@@ -36,15 +30,9 @@ def test_build_new_x64_pe_exe() -> None:
 
     pe.pe_file.seek(len(pe.mz_header))
     stub = pe.pe_file.read(pe.mz_header.e_lfanew - len(pe.mz_header))
-    assert (
-        stub[14 : 73 - 4] == b"This program is made with dissect.pe <3 kusjesvanSRT <3"
-    )
+    assert stub[14 : 73 - 4] == b"This program is made with dissect.pe <3 kusjesvanSRT <3"
 
-    assert (
-        pe.file_header.Characteristics
-        & c_pe.ImageCharacteristics.IMAGE_FILE_32BIT_MACHINE
-        != 0x0100
-    )
+    assert not (pe.file_header.Characteristics & c_pe.ImageCharacteristics.IMAGE_FILE_32BIT_MACHINE)
 
 
 def test_build_new_x86_pe_dll() -> None:
@@ -52,15 +40,8 @@ def test_build_new_x86_pe_dll() -> None:
     builder.new()
     pe = builder.pe
 
-    assert (
-        pe.file_header.Characteristics
-        & c_pe.ImageCharacteristics.IMAGE_FILE_32BIT_MACHINE
-        == 0x0100
-    )
-    assert (
-        pe.file_header.Characteristics & c_pe.ImageCharacteristics.IMAGE_FILE_DLL
-        == 0x2000
-    )
+    assert pe.file_header.Characteristics & c_pe.ImageCharacteristics.IMAGE_FILE_32BIT_MACHINE
+    assert pe.file_header.Characteristics & c_pe.ImageCharacteristics.IMAGE_FILE_DLL
 
 
 def test_build_new_x64_pe_dll() -> None:
@@ -68,15 +49,8 @@ def test_build_new_x64_pe_dll() -> None:
     builder.new()
     pe = builder.pe
 
-    assert (
-        pe.file_header.Characteristics
-        & c_pe.ImageCharacteristics.IMAGE_FILE_32BIT_MACHINE
-        != 0x0100
-    )
-    assert (
-        pe.file_header.Characteristics & c_pe.ImageCharacteristics.IMAGE_FILE_DLL
-        == 0x2000
-    )
+    assert not (pe.file_header.Characteristics & c_pe.ImageCharacteristics.IMAGE_FILE_32BIT_MACHINE)
+    assert pe.file_header.Characteristics & c_pe.ImageCharacteristics.IMAGE_FILE_DLL
 
 
 def test_build_new_pe_with_custom_section() -> None:
@@ -88,7 +62,7 @@ def test_build_new_pe_with_custom_section() -> None:
 
     patcher = Patcher(pe=pe)
 
-    new_pe = PE(pe_file=patcher.build)
+    new_pe = PE(pe_file=patcher.build())
 
     assert new_pe.sections[".SRT"].name == ".SRT"
     assert new_pe.sections[".SRT"].size == 12

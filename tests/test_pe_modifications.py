@@ -14,7 +14,7 @@ def test_add_imports() -> None:
         pe.import_mgr.add(dllname=dllname, functions=functions)
 
         patcher = Patcher(pe=pe)
-        new_pe = PE(pe_file=patcher.build)
+        new_pe = PE(pe_file=patcher.build())
 
         assert "kusjesvanSRT.dll" in new_pe.imports
 
@@ -30,7 +30,7 @@ def test_resize_section_smaller() -> None:
         pe.sections[".text"].data = b"kusjesvanSRT, patched with dissect"
 
         patcher = Patcher(pe=pe)
-        new_pe = PE(pe_file=patcher.build)
+        new_pe = PE(pe_file=patcher.build())
 
         assert new_pe.sections[".text"].size == len(b"kusjesvanSRT, patched with dissect")
         assert (
@@ -48,7 +48,7 @@ def test_resize_section_bigger() -> None:
         pe.patched_sections[".rdata"].data += b"kusjesvanSRT, patched with dissect" * 100
 
         patcher = Patcher(pe=pe)
-        new_pe = PE(pe_file=patcher.build)
+        new_pe = PE(pe_file=patcher.build())
 
         assert new_pe.sections[".rdata"].size == original_size + len(b"kusjesvanSRT, patched with dissect" * 100)
 
@@ -61,7 +61,7 @@ def test_resize_resource_smaller() -> None:
             e.data = b"kusjesvanSRT, patched with dissect"
 
         patcher = Patcher(pe=pe)
-        new_pe = PE(pe_file=patcher.build)
+        new_pe = PE(pe_file=patcher.build())
 
         assert [patched.data for patched in new_pe.get_resource_type(rsrc_id="Manifest")] == [
             b"kusjesvanSRT, patched with dissect"
@@ -76,7 +76,7 @@ def test_resize_resource_bigger() -> None:
             e.data = b"kusjesvanSRT, patched with dissect" + e.data
 
         patcher = Patcher(pe=pe)
-        new_pe = PE(pe_file=patcher.build)
+        new_pe = PE(pe_file=patcher.build())
 
         assert [
             patched.data[: len(b"kusjesvanSRT, patched with dissect")]
@@ -90,7 +90,7 @@ def test_add_section() -> None:
         pe.add_section(name=".SRT", data=b"kusjesvanSRT")
 
         patcher = Patcher(pe=pe)
-        new_pe = PE(pe_file=patcher.build)
+        new_pe = PE(pe_file=patcher.build())
 
         assert ".SRT" in new_pe.sections
         assert new_pe.sections[".SRT"].data == b"kusjesvanSRT"
