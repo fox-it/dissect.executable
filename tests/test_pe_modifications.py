@@ -57,13 +57,13 @@ def test_resize_resource_smaller() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-        for e in pe.get_resource_type(rsrc_id="Manifest"):
+        for e in pe.rsrc_mgr.by_type(rsrc_id="Manifest"):
             e.data = b"kusjesvanSRT, patched with dissect"
 
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build())
 
-        assert [patched.data for patched in new_pe.get_resource_type(rsrc_id="Manifest")] == [
+        assert [patched.data for patched in new_pe.rsrc_mgr.by_type(rsrc_id="Manifest")] == [
             b"kusjesvanSRT, patched with dissect"
         ]
 
@@ -72,7 +72,7 @@ def test_resize_resource_bigger() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-        for e in pe.get_resource_type(rsrc_id="Manifest"):
+        for e in pe.rsrc_mgr.by_type(rsrc_id="Manifest"):
             e.data = b"kusjesvanSRT, patched with dissect" + e.data
 
         patcher = Patcher(pe=pe)
@@ -80,7 +80,7 @@ def test_resize_resource_bigger() -> None:
 
         assert [
             patched.data[: len(b"kusjesvanSRT, patched with dissect")]
-            for patched in new_pe.get_resource_type(rsrc_id="Manifest")
+            for patched in new_pe.rsrc_mgr.by_type(rsrc_id="Manifest")
         ] == [b"kusjesvanSRT, patched with dissect"]
 
 

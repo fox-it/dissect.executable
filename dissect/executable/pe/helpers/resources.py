@@ -14,9 +14,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from typing import BinaryIO
 
-    from dissect.cstruct.cstruct import cstruct
-    from dissect.cstruct.types.enum import EnumInstance
-
     from dissect.executable.pe.helpers.sections import PESection
     from dissect.executable.pe.pe import PE
 
@@ -24,7 +21,7 @@ if TYPE_CHECKING:
 @dataclass
 class RawResource:
     offset: int
-    entry: c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY | c_pe.IMAGE_RESOURCE_DIRECTORY
+    entry: c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY | c_pe.IMAGE_RESOURCE_DIRECTORY | c_pe.IMAGE_RESOURCE_DATA_ENTRY
     data_offset: int
     data: bytes | None = None
     resource: Resource | None = None
@@ -142,8 +139,6 @@ class RawResource:
 
         entries = self._read_entries(data, directory)
 
-        _rc_type: str = ""
-
         for entry in entries:
             _rc_type = self._rc_type(entry, data, level)
 
@@ -169,7 +164,7 @@ class RawResource:
 
         return str(entry.Id)
 
-    def get_resource(self, name: str) -> Resource:
+    def by_name(self, name: str) -> Resource:
         """Retrieve the resource by name.
 
         Args:
@@ -184,7 +179,7 @@ class RawResource:
         except KeyError:
             raise ResourceException(f"Resource {name} not found!")
 
-    def get_resource_type(self, rsrc_id: str | EnumInstance) -> Iterator[Resource]:
+    def by_type(self, rsrc_id: str | c_pe.ResourceID) -> Iterator[Resource]:
         """Yields a generator containing all of the nodes within the resources that contain the requested ID.
 
         The ID can be either given by name or its value.
@@ -316,7 +311,7 @@ class Resource:
         section: PESection,
         name: str | int,
         entry_offset: int,
-        data_entry: cstruct,
+        data_entry: c_pe.IMAGE_RESOURCE_DATA_ENTRY,
         rc_type: str,
         data: bytes = b"",
     ):

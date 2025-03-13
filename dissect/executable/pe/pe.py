@@ -257,23 +257,6 @@ class PE:
                 self.tls_mgr = tls.TLSManager(pe=self, section=section)
                 self.tls_callbacks = self.tls_mgr.callbacks
 
-    def get_resource_type(self, rsrc_id: str | Enum) -> Iterator[Resource]:
-        """Yields a generator containing all of the nodes within the resources that contain the requested ID.
-
-        The ID can be either given by name or its value.
-
-        Args:
-            rsrc_id: The resource ID to find, this can be a cstruct `EnumInstance` or `str`.
-
-        Yields:
-            All of the nodes that contain the requested type.
-        """
-
-        if rsrc_id not in self.resources:
-            raise ResourceException(f"Resource with ID {rsrc_id} not found in PE!")
-
-        yield from self.rsrc_mgr.parse_resources(resources=self.resources[rsrc_id])
-
     def virtual_address(self, address: int) -> int:
         """Return the virtual address given a (possible) physical address.
 
