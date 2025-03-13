@@ -56,7 +56,7 @@ class Builder:
 
         # Add a dummy section header to the new PE, we need at least 1 section to parse the PE
         dummy_data = b"<3kusjesvanSRT<3"
-        dummy_multiplier = 0x400 // len(b"<3kusjesvanSRT<3")
+        dummy_multiplier = 0x400 // len(dummy_data)
 
         section_header_offset = self.optional_header.SizeOfHeaders
         pointer_to_raw_data = utils.align_int(
@@ -234,13 +234,13 @@ class Builder:
             time_date_stamp = int(datetime.now(tz=timezone.utc).timestamp())
 
         file_header = c_pe.IMAGE_FILE_HEADER()
-        file_header.Machine = machine
+        file_header.Machine = c_pe.MachineType(machine)
         file_header.NumberOfSections = number_of_sections
         file_header.TimeDateStamp = time_date_stamp
         file_header.PointerToSymbolTable = pointer_to_symbol_table
         file_header.NumberOfSymbols = number_of_symbols
         file_header.SizeOfOptionalHeader = size_of_optional_header
-        file_header.Characteristics = characteristics
+        file_header.Characteristics = c_pe.ImageCharacteristics(characteristics)
 
         return file_header
 
@@ -429,7 +429,7 @@ class Builder:
         section_header.PointerToLinenumbers = pointer_to_linenumbers
         section_header.NumberOfRelocations = number_of_relocations
         section_header.NumberOfLinenumbers = number_of_linenumbers
-        section_header.Characteristics = characteristics
+        section_header.Characteristics = c_pe.SectionFlags(characteristics)
 
         return section_header
 
