@@ -11,7 +11,6 @@ from dissect.executable.exception import (
     InvalidArchitecture,
     InvalidPE,
     InvalidVA,
-    ResourceException,
 )
 from dissect.executable.pe.c_pe import c_cv_info, c_pe
 from dissect.executable.pe.helpers import (
@@ -26,12 +25,10 @@ from dissect.executable.pe.helpers import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterable
 
     from dissect.cstruct.cstruct import cstruct
-    from dissect.cstruct.types.enum import Enum
 
-    from dissect.executable.pe.helpers.resources import Resource
 
 
 class PE:
@@ -234,6 +231,7 @@ class PE:
 
             directory_va_offset = section_dir.VirtualAddress - section.virtual_address
             section.directories[idx] = (directory_va_offset, section_dir.Size)
+
             # Parse the Import Address Table (IAT)
             if idx == c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT:
                 self.import_mgr = imports.ImportManager(pe=self, section=section)
@@ -418,7 +416,7 @@ class PE:
 
         return self.optional_header.DataDirectory[index].Size != 0
 
-    def debug(self) -> cstruct | None:
+    def debug(self) -> c_cv_info.CV_INFO_PDB70 | None:
         """Return the debug directory of the given PE file.
 
         Returns:

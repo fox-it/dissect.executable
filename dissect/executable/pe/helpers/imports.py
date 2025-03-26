@@ -11,8 +11,6 @@ from dissect.executable.pe.helpers.utils import create_struct
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from dissect.cstruct.cstruct import cstruct
-
     from dissect.executable.pe.helpers.sections import PESection
     from dissect.executable.pe.pe import PE
 
@@ -31,13 +29,13 @@ class ImportModule:
     def __init__(
         self,
         name: bytes,
-        import_descriptor: int | None | c_pe.IMAGE_IMPORT_DESCRIPTOR,
+        import_descriptor: c_pe.IMAGE_IMPORT_DESCRIPTOR,
         module_va: int,
         name_va: int,
         first_thunk: int,
     ):
         self.name = name
-        self.import_descriptor = import_descriptor or c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT
+        self.import_descriptor = import_descriptor
         self.module_va = module_va
         self.name_va = name_va
         self.first_thunk = first_thunk
@@ -94,7 +92,6 @@ class ImportFunction:
             # For the case thunkdata is not defined, such as during the `add`
             return ""
 
-
         if not (entry := self.ordinal):
             self.pe.seek(self.data_address + 2)
             entry = c_pe.char[None](self.pe).decode()
@@ -131,7 +128,7 @@ class ImportManager:
         self.thunks: list[c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64] = []
 
         self._thunk_data: type[c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64] = None
-        self._high_bit: int = None
+        self._high_bit: int = 0
 
         self.set_architecture(pe)
         self.parse_imports()
@@ -149,7 +146,6 @@ class ImportManager:
 
         The imports are in turn added to the `imports` attribute so they can be accessed by the user.
         """
-
         import_data = BytesIO(self.section.directory_data(index=c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT))
 
         # Loop over the entries

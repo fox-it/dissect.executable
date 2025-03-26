@@ -24,7 +24,7 @@ class ExportFunction:
 
     ordinal: int
     address: int
-    name: bytes | None = b""
+    name: bytes = b""
 
     def __str__(self) -> str:
         return self.name.decode() if self.name else f"#{self.ordinal}"
@@ -58,20 +58,20 @@ class ExportManager:
 
         # Create a list of adresses for the exported functions
         export_entry.seek(export_directory.AddressOfFunctions - export_entry_va)
-        export_addresses = c_pe.uint32[export_directory.NumberOfFunctions].read(export_entry)
+        export_addresses: list[int] = c_pe.uint32[export_directory.NumberOfFunctions].read(export_entry)
         # Create a list of addresses for the exported functions that have associated names
         export_entry.seek(export_directory.AddressOfNames - export_entry_va)
-        export_names = c_pe.uint32[export_directory.NumberOfNames].read(export_entry)
+        export_names: list[int] = c_pe.uint32[export_directory.NumberOfNames].read(export_entry)
         # Create a list of addresses for the ordinals associated with the functions
         export_entry.seek(export_directory.AddressOfNameOrdinals - export_entry_va)
-        export_ordinals = c_pe.uint16[export_directory.NumberOfNames].read(export_entry)
+        export_ordinals: list[int] = c_pe.uint16[export_directory.NumberOfNames].read(export_entry)
 
         # Iterate over the export functions and store the information
         export_entry.seek(export_directory.AddressOfFunctions - export_entry_va)
         for idx, address in enumerate(export_addresses):
             _idx = idx + 1
             key = str(_idx)
-            export_name: str | None = None
+            export_name: bytes | None = None
 
             if idx in export_ordinals:
                 entry_offset = export_names[export_ordinals.index(idx)] - export_entry_va

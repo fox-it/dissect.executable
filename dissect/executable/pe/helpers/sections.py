@@ -8,8 +8,6 @@ from dissect.executable.pe.c_pe import c_pe
 from dissect.executable.pe.helpers import utils
 
 if TYPE_CHECKING:
-    from dissect.cstruct.cstruct import cstruct
-
     from dissect.executable.pe.pe import PE
 
 
@@ -23,7 +21,7 @@ class PESection:
         data: The data that should be part of the section, this can be used to add new sections.
     """
 
-    def __init__(self, pe: PE, section: cstruct, offset: int, data: bytes = b""):
+    def __init__(self, pe: PE, section: c_pe.IMAGE_SECTION_HEADER, offset: int, data: bytes = b""):
         self.pe = pe
         self.section = section
         self.offset = offset
@@ -225,7 +223,7 @@ def build_section(
     pointer_to_raw_data: int,
     name: str | bytes = b".dissect",
     characteristics: int = 0xC0000040,
-) -> cstruct:
+) -> c_pe.IMAGE_SECTION_HEADER:
     """Build a new section for the PE.
 
     Args:
