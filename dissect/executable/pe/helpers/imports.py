@@ -71,8 +71,13 @@ class ImportFunction:
         self._name = name
 
     @property
+    def data_address(self) -> int:
+        """Shows the AddressOfData of the thunk data."""
+        return self.thunkdata.u1.AddressOfData
+
+    @property
     def ordinal(self) -> int:
-        return self.thunkdata.u1.AddressOfData & self.high_bit
+        return self.data_address & self.high_bit
 
     @property
     def name(self) -> str:
@@ -89,10 +94,9 @@ class ImportFunction:
             # For the case thunkdata is not defined, such as during the `add`
             return ""
 
-        data_address = self.thunkdata.u1.AddressOfData
 
         if not (entry := self.ordinal):
-            self.pe.seek(data_address + 2)
+            self.pe.seek(self.data_address + 2)
             entry = c_pe.char[None](self.pe).decode()
 
         if isinstance(entry, int):
