@@ -49,7 +49,7 @@ class ExportManager:
         """
 
         export_entry_va = self.pe.directory_entry_rva(c_pe.IMAGE_DIRECTORY_ENTRY_EXPORT)
-        export_entry = BytesIO(self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_EXPORT))
+        export_entry = BytesIO(self.section.directory_data(index=c_pe.IMAGE_DIRECTORY_ENTRY_EXPORT))
         export_directory = c_pe.IMAGE_EXPORT_DIRECTORY(export_entry)
 
         # Seek to the offset of the export name

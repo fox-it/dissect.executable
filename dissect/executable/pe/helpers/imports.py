@@ -150,8 +150,7 @@ class ImportManager:
         The imports are in turn added to the `imports` attribute so they can be accessed by the user.
         """
 
-        import_data = BytesIO(self.pe.read_image_directory(index=c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT))
-        import_data.seek(0)
+        import_data = BytesIO(self.section.directory_data(index=c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT))
 
         # Loop over the entries
         for descriptor_va, import_descriptor in self.import_descriptors(import_data=import_data):

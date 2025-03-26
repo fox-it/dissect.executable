@@ -229,9 +229,11 @@ class PE:
 
             # Take note of the current directory VA so we can dynamically update it when resizing sections
             section = self.datadirectory_section(index=idx)
-            directory_va_offset = self.optional_header.DataDirectory[idx].VirtualAddress - section.virtual_address
-            section.directories[idx] = directory_va_offset
 
+            section_dir = self.optional_header.DataDirectory[idx]
+
+            directory_va_offset = section_dir.VirtualAddress - section.virtual_address
+            section.directories[idx] = (directory_va_offset, section_dir.Size)
             # Parse the Import Address Table (IAT)
             if idx == c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT:
                 self.import_mgr = imports.ImportManager(pe=self, section=section)

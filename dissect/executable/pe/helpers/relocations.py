@@ -28,7 +28,7 @@ class RelocationManager:
     def parse_relocations(self) -> None:
         """Parse the relocation table of the PE file."""
 
-        reloc_data = BytesIO(self.pe.read_image_directory(c_pe.IMAGE_DIRECTORY_ENTRY_BASERELOC))
+        reloc_data = BytesIO(self.section.directory_data(c_pe.IMAGE_DIRECTORY_ENTRY_BASERELOC))
         reloc_data_size = reloc_data.getbuffer().nbytes
         while reloc_data.tell() < reloc_data_size:
             reloc_directory = c_pe.IMAGE_BASE_RELOCATION(reloc_data)

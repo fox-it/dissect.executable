@@ -34,9 +34,16 @@ class PESection:
         self._size_of_raw_data = section.SizeOfRawData
 
         # Keep track of the directories that are within this section
-        self.directories = OrderedDict()
+        self.directories: OrderedDict[int, tuple[int, int]] = OrderedDict()
 
         self._data = data or self.read_data()
+
+    def directory_data(self, index: int) -> bytes:
+        if (dir_information := self.directories.get(index)) is None:
+            raise ValueError("Directory not found in PE Section")
+
+        offset, size = dir_information
+        return self.data[offset : offset + size]
 
     def read_data(self) -> bytes:
         """Return the data within the section.
@@ -89,9 +96,8 @@ class PESection:
         self.section.VirtualAddress = value
 
         # Update the VA of the directory residing within this section
-        for idx, offset in self.directories.items():
-            directory_va = value + offset
-            self.pe.optional_header.DataDirectory[idx].VirtualAddress = directory_va
+        for idx, (offset, _) in self.directories.items():
+            self.pe.optional_header.DataDirectory[idx].VirtualAddress = value + offset
 
     @property
     def virtual_size(self) -> int:
@@ -181,7 +187,7 @@ class PESection:
         prev_va = first_section.virtual_address
         prev_vsize = first_section.virtual_size
 
-        for name, section in self.pe.patched_sections.items():
+        for section in self.pe.patched_sections.values():
             if section.virtual_address == prev_va:
                 continue
 
@@ -193,8 +199,8 @@ class PESection:
                 section virtual address is lower than the previous section. We want to prevent messing up RVA's as
                 much as possible, this could lead to binaries that are a bit larger than they need to be but that
                 doesn't really matter."""
-                self.pe.patched_sections[name].virtual_address = virtual_address
-                self.pe.patched_sections[name].pointer_to_raw_data = pointer_to_raw_data
+                section.virtual_address = virtual_address
+                section.pointer_to_raw_data = pointer_to_raw_data
 
             prev_ptr = pointer_to_raw_data
             prev_size = section.size_of_raw_data
