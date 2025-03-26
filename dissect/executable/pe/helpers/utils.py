@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import struct
 from functools import lru_cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 if TYPE_CHECKING:
     from dissect.executable.pe import PE, PESection
@@ -53,3 +53,21 @@ def pad(size: int) -> bytes:
         The null bytes as `bytes`.
     """
     return size * b"\x00"
+
+
+class Manager:
+    def __init__(self, pe: PE, section: PESection) -> None:
+        self.pe = pe
+        self.section = section
+
+    def parse(self) -> None:
+        raise NotImplementedError
+
+    def add(self, *args, **kwargs) -> None:
+        raise NotImplementedError
+
+    def delete(self, *args, **kwargs) -> None:
+        raise NotImplementedError
+
+    def patch(self, *args, **kwargs) -> None:
+        raise NotImplementedError

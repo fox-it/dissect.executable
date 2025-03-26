@@ -44,7 +44,7 @@ class RawResource:
     def parse(self) -> None:
         """Parse the resource directory entry of the PE file."""
 
-        rsrc_data = BytesIO(self.section.data)
+        rsrc_data = BytesIO(self.pe.read_image_directory(c_pe.IMAGE_DIRECTORY_ENTRY_RESOURCE))
         self.resources = self._read_resource(data=rsrc_data, offset=0, level=1)
 
     def _read_entries(

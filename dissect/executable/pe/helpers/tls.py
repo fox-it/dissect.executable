@@ -42,7 +42,7 @@ class TLSManager:
     def parse_tls(self) -> None:
         """Parse the TLS directory entry of the PE file when present."""
 
-        tls_data = BytesIO(self.section.data)
+        tls_data = BytesIO(self.pe.read_image_directory(c_pe.IMAGE_DIRECTORY_ENTRY_TLS))
         self.tls = self._tls_directory(tls_data)
 
         self.pe.seek(self.tls.AddressOfCallBacks - self._image_base)
