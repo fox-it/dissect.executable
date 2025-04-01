@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
+from copy import copy
 from typing import TYPE_CHECKING
 
 from dissect.executable.exception import BuildSectionException
@@ -8,7 +9,83 @@ from dissect.executable.pe.c_pe import c_pe
 from dissect.executable.pe.helpers import utils
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from dissect.executable.pe.pe import PE
+
+
+class PESectionManager:
+    def __init__(self) -> None:
+        self._sections: OrderedDict[str, PESection] = OrderedDict()
+        self._patched_sections: OrderedDict[str, PESection] = OrderedDict()
+
+    def add(self, name: str, section: PESection) -> None:
+        self._sections[name] = section
+        self._patched_sections[name] = PESection(section.pe, section.section, section.offset, copy(section.data))
+
+    @property
+    def last_section(self) -> PESection:
+        return self._sections[next(reversed(self._sections))]
+
+    def get(self, va: int = 0, name: str = "", patch: bool = False) -> PESection | None:
+        sections = self.sections(patch)
+
+        if name:
+            return sections.get(name)
+
+        return self._in_virtual_range(va, sections.values())
+
+    def sections(self, patch: bool = False) -> OrderedDict[str, PESection]:
+        return self._patched_sections if patch else self._sections
+
+    def in_range(self, va: int, patch: bool = False) -> PESection | None:
+        """Retrieve a section pof the PE file by virtual address.
+
+        Args:
+            va: The virtual address to look for
+            patch: Whether it should look through the patched sections.
+
+        Returns:
+            a `.PESection` corresponding to the virtual address
+
+        """
+        return self.get(va=va, patch=patch)
+
+    def in_raw_range(self, offset: int, patch: bool = False) -> PESection | None:
+        sections = self.sections(patch)
+
+        for section in sections.values():
+            if section.pointer_to_raw_data <= offset < section.pointer_to_raw_data + section.size_of_raw_data:
+                return section
+
+        return None
+
+    def from_index(self, segment_index: int, patch: bool = False) -> PESection:
+        """Retrieve the section of the PE by index.
+
+        Args:
+            segment_index: The segment to retrieve based on the order within the PE.
+
+        TODO: Need to check whether this works for pdb stuff
+
+        Returns:
+            A `PESection` corresponding to the segment_index.
+        """
+        sections = self.sections(patch)
+
+        sections_items = list(sections.items())
+
+        idx = 0 if segment_index - 1 == -1 else segment_index
+        section_name = sections_items[idx - 1][0]
+
+        return sections[section_name]
+
+    def _in_virtual_range(self, va: int, sections: Iterable[PESection]) -> PESection | None:
+        for section in sections:
+            if section.virtual_address <= va < section.virtual_address + section.virtual_size:
+                return section
+
+        return None
 
 
 class PESection:
