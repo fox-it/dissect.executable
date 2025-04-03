@@ -30,7 +30,6 @@ if TYPE_CHECKING:
     from dissect.cstruct.cstruct import cstruct
 
 
-
 class PE:
     """Base class for parsing PE files.
 
@@ -58,9 +57,6 @@ class PE:
 
         self.section_manager = sections.PESectionManager()
 
-        self.sections: OrderedDict[str, sections.PESection] = OrderedDict()
-        self.patched_sections: OrderedDict[str, sections.PESection] = OrderedDict()
-
         self.imports: OrderedDict[str, imports.ImportModule] = None
         self.exports: OrderedDict[str, exports.ExportFunction] = None
         self.resources: OrderedDict[str, resources.Resource] = None
@@ -79,7 +75,6 @@ class PE:
         self.imagebase = self.nt_headers.OptionalHeader.ImageBase
         self.file_alignment = self.nt_headers.OptionalHeader.FileAlignment
         self.section_alignment = self.nt_headers.OptionalHeader.SectionAlignment
-        self.base_address = self.nt_headers.OptionalHeader.ImageBase
         self.timestamp = datetime.fromtimestamp(self.file_header.TimeDateStamp, tz=timezone.utc)
 
         # Parse the section header
@@ -151,11 +146,9 @@ class PE:
             section_header = c_pe.IMAGE_SECTION_HEADER(self.pe_file)
             section_name = section_header.Name.decode().strip("\x00")
             # Take note of the sections, keep track of any patches seperately
-            self.sections[section_name] = sections.PESection(pe=self, section=section_header, offset=offset)
-            self.patched_sections[section_name] = sections.PESection(pe=self, section=section_header, offset=offset)
             self.section_manager.add(section_name, sections.PESection(pe=self, section=section_header, offset=offset))
 
-        self.last_section_offset = self.sections[next(reversed(self.sections))].offset
+        self.last_section_offset = self.section_manager.last_section().offset
 
     def _section_in_range(self, address: int, values: Iterable[sections.PESection]) -> sections.PESection | None:
         for section in values:
@@ -163,32 +156,6 @@ class PE:
                 return section
 
         return None
-
-    def section(self, va: int = 0, name: str = "") -> sections.PESection | None:
-        """Function to retrieve a section based on the given virtual address or name.
-
-        Args:
-            va: The virtual address to look for within the sections.
-            name: The name of the section.
-
-        Returns:
-            A `PESection` object.
-        """
-
-        return self.section_manager.get(va, name)
-
-    def patched_section(self, va: int = 0, name: str = "") -> sections.PESection | None:
-        """Function to retrieve a patched section based on the given virtual address or name.
-
-        Args:
-            va: The virtual address to look for within the patched sections.
-            name: The name of the patched section.
-
-        Returns:
-            A `PESection` object.
-        """
-
-        return self.section_manager.get(va=va, name=name, patch=True)
 
     def datadirectory_section(self, index: int) -> sections.PESection:
         """Return the section that contains the given virtual address.
@@ -367,7 +334,6 @@ class PE:
 
         # Write the data to the PE file so we can do a raw_read on this data in the section
         self.pe_file.write(data)
-        print(self.patched_sections)
 
         # Update the section data
         if section := self.section_manager.in_range(offset, patch=True):
@@ -429,23 +395,6 @@ class PE:
                 return c_cv_info.CV_INFO_PDB70(dbg_entry)
         return None
 
-    def get_section(self, segment_index: int) -> sections.PESection:
-        """Retrieve the section of the PE by index.
-
-        Args:
-            segment_index: The segment to retrieve based on the order within the PE.
-
-        Returns:
-            A `PESection` corresponding to the segment_index.
-        """
-
-        sections = list(self.sections.items())
-
-        idx = 0 if segment_index - 1 == -1 else segment_index
-        section_name = sections[idx - 1][0]
-
-        return self.sections[section_name]
-
     def symbol_data(self, symbol: cstruct, size: int) -> bytes:
         """Retrieve data from the PE using a PDB symbol.
 
@@ -457,7 +406,7 @@ class PE:
             The bytes that were read from the offset within the PE.
         """
 
-        _section = self.get_section(segment_index=symbol.seg)
+        _section = self.section_manager.from_index(segment_index=symbol.seg)
         address = self.imagebase + _section.virtual_address + symbol.off
 
         self.pe_file.seek(address)
@@ -522,8 +471,6 @@ class PE:
             self.optional_header.DataDirectory[datadirectory].Size = datadirectory_size or len(data)
 
         # Add the new section to the PE
-        self.sections[name] = sections.PESection(pe=self, section=new_section, offset=offset, data=data)
-        self.patched_sections[name] = sections.PESection(pe=self, section=new_section, offset=offset, data=data)
         self.section_manager.add(name, sections.PESection(pe=self, section=new_section, offset=offset, data=data))
 
         # Update the SizeOfImage field

@@ -64,6 +64,9 @@ def test_build_new_pe_with_custom_section() -> None:
 
     new_pe = PE(pe_file=patcher.build())
 
-    assert new_pe.sections[".SRT"].name == ".SRT"
-    assert new_pe.sections[".SRT"].size == 12
-    assert new_pe.sections[".SRT"].data == b"kusjesvanSRT"
+    section_manager = new_pe.section_manager
+
+    section = section_manager.get(name=".SRT")
+    assert section.name == ".SRT"
+    assert section.size == 12
+    assert section.data == b"kusjesvanSRT"

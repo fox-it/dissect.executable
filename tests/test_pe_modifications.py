@@ -43,14 +43,16 @@ def test_resize_section_bigger() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-        original_size = pe.sections[".rdata"].size
+        original_size = pe.section_manager.get(name=".rdata").size
 
-        pe.patched_sections[".rdata"].data += b"kusjesvanSRT, patched with dissect" * 100
+        pe.section_manager.get(name=".rdata", patch=True).data += b"kusjesvanSRT, patched with dissect" * 100
 
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build())
 
-        assert new_pe.sections[".rdata"].size == original_size + len(b"kusjesvanSRT, patched with dissect" * 100)
+        assert new_pe.section_manager.get(name=".rdata").size == original_size + len(
+            b"kusjesvanSRT, patched with dissect" * 100
+        )
 
 
 def test_resize_resource_smaller() -> None:
@@ -92,5 +94,5 @@ def test_add_section() -> None:
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build())
 
-        assert ".SRT" in new_pe.sections
-        assert new_pe.sections[".SRT"].data == b"kusjesvanSRT"
+        assert ".SRT" in new_pe.section_manager.sections()
+        assert new_pe.section_manager.get(name=".SRT").data == b"kusjesvanSRT"

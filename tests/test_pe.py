@@ -26,7 +26,7 @@ def test_pe_sections() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-    assert known_sections == list(pe.sections)
+    assert known_sections == list(pe.section_manager.sections())
 
 
 def test_pe_imports() -> None:

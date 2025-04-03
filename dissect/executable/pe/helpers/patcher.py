@@ -21,6 +21,7 @@ class Patcher:
     def __init__(self, pe: PE):
         self.pe = pe
         self.patched_pe = BytesIO()
+        self._section_manager = pe.section_manager
         self.functions = []
 
     def build(self) -> BytesIO:
@@ -85,11 +86,11 @@ class Patcher:
             self.patched_pe.write(utils.pad(size=self.pe.section_header_offset - self.patched_pe.tell()))
 
         # Write the section headers
-        for section in self.pe.section_manager.sections(True).values():
+        for section in self._section_manager.sections(patch=True).values():
             self.patched_pe.write(section.dump())
 
         # Add the data for each section
-        for section in self.pe.section_manager.sections(True).values():
+        for section in self._section_manager.sections(patch=True).values():
             self.patched_pe.seek(section.pointer_to_raw_data)
             self.patched_pe.write(section.data)
 
@@ -130,11 +131,11 @@ class Patcher:
 
         # Get the original VA of the section the import directory is residing in, this value is used to calculate the
         # new RVA's
-        section = self.pe.patched_section(va=directory_va)
+        section = self._section_manager.get(va=directory_va, patch=True)
         if section is None:
             return
         directory_offset = directory_va - section.virtual_address
-        original_directory_va = self.pe.sections[section.name].virtual_address + directory_offset
+        original_directory_va = self._section_manager.get(name=section.name).virtual_address + directory_offset
 
         # Loop over the imports of the PE to patch the RVA's of the import descriptors and the associated thunkdata
         # entries
@@ -165,9 +166,9 @@ class Patcher:
                 # Check the original RVA associated with the AddressOfData field in the thunkdata, retrieve the
                 # original VA
                 # and use it to also select the patched virtual address of this section that the RVA is located in
-                if section := self.pe.section(function.data_address):
+                if section := self._section_manager.get(va=function.data_address):
                     virtual_address = section.virtual_address
-                    new_virtual_address = self.pe.patched_section(name=section.name).virtual_address
+                    new_virtual_address = self._section_manager.get(name=section.name, patch=True).virtual_address
 
                 # Calculate the offset using the VA of the section and update the thunkdata
                 va_offset = function.data_address - virtual_address
@@ -203,12 +204,11 @@ class Patcher:
 
         # Get the original VA of the section the import directory is residing in, this value is used to calculate the
         # new RVA's
-        section = self.pe.patched_section(va=directory_va)
-        if section is None:
+        if not (section := self._section_manager.get(va=directory_va, patch=True)):
             return
 
         directory_offset = directory_va - section.virtual_address
-        original_directory_va = self.pe.sections[section.name].virtual_address + directory_offset
+        original_directory_va = self._section_manager.get(name=section.name).virtual_address + directory_offset
 
         name_offset = export_directory.Name - original_directory_va
         address_of_functions_offset = export_directory.AddressOfFunctions - original_directory_va
@@ -230,11 +230,10 @@ class Patcher:
         self.seek(export_directory.AddressOfFunctions)
         export_addresses = c_pe.uint32[export_directory.NumberOfFunctions].read(self.patched_pe)
         for address in export_addresses:
-            section = self.pe.section(va=address)
-            if not section:
+            if not (section := self._section_manager.get(va=address)):
                 continue
             address_offset = address - section.virtual_address
-            new_address = self.pe.section_manager.get(name=section.name).virtual_address + address_offset
+            new_address = self._section_manager.get(name=section.name, patch=True).virtual_address + address_offset
             new_function_rvas.append(new_address)
 
         rva_struct = utils.create_struct("<I")
@@ -251,12 +250,12 @@ class Patcher:
         self.seek(export_directory.AddressOfNames)
         export_names = c_pe.uint32[export_directory.NumberOfNames].read(self.patched_pe)
         for name_address in export_names:
-            section = self.pe.section(va=name_address)
+            section = self._section_manager.get(va=name_address)
             if section is None:
                 continue
 
             address_offset = name_address - section.virtual_address
-            new_address = self.pe.patched_section(name=section.name).virtual_address + address_offset
+            new_address = self._section_manager.get(name=section.name, patch=True).virtual_address + address_offset
             new_name_rvas.append(new_address)
 
         for name_rva in new_name_rvas:
@@ -264,7 +263,6 @@ class Patcher:
 
         self.seek(export_directory.AddressOfNames)
         self.patched_pe.write(name_rvas)
-        # self.pe.optional_header.DataDirectory[c_pe.IMAGE_DIRECTORY_ENTRY_EXPORT].Size = len(name_rvas)
 
     def _patch_rsrc_rvas(self) -> None:
         """Function to patch the RVAs of the resource directory and the associated resource data RVA's."""
@@ -312,23 +310,23 @@ class Patcher:
         image_base = self.pe.optional_header.ImageBase
 
         # Patch the TLS StartAddressOfRawData and EndAddressOfRawData
-        if section := self.pe.section(va=tls_directory.StartAddressOfRawData - image_base):
+        if section := self._section_manager.get(va=tls_directory.StartAddressOfRawData - image_base):
             start_address_offset = tls_directory.StartAddressOfRawData - section.virtual_address
             tls_directory.StartAddressOfRawData = (
-                self.pe.patched_section(name=section.name).virtual_address + start_address_offset
+                self._section_manager.get(name=section.name, patch=True).virtual_address + start_address_offset
             )
             end_address_offset = tls_directory.EndAddressOfRawData - tls_directory.StartAddressOfRawData
             tls_directory.EndAddressOfRawData = tls_directory.StartAddressOfRawData + end_address_offset
 
         # Patch the TLS callbacks address
-        if section := self.pe.section(va=tls_directory.AddressOfCallBacks - image_base):
+        if section := self._section_manager.get(va=tls_directory.AddressOfCallBacks - image_base):
             address_of_callbacks_offset = tls_directory.AddressOfCallBacks - section.virtual_address
             tls_directory.AddressOfCallBacks = (
-                self.pe.patched_section(name=section.name).virtual_address + address_of_callbacks_offset
+                self._section_manager.get(name=section.name, patch=True).virtual_address + address_of_callbacks_offset
             )
 
         # Patch the TLS AddressOfIndex
-        if section := self.pe.section(va=tls_directory.AddressOfIndex - image_base):
+        if section := self._section_manager.get(va=tls_directory.AddressOfIndex - image_base, patch=True):
             address_of_index_offset = tls_directory.AddressOfIndex - section.virtual_address
             tls_directory.AddressOfIndex = section.virtual_address + address_of_index_offset
 

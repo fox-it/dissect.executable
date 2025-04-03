@@ -24,21 +24,21 @@ class PESectionManager:
         self._patched_sections[name] = PESection(section.pe, section.section, section.offset, copy(section.data))
 
     def last_section(self, *, patch: bool = False) -> PESection:
-        sections = self.sections(patch)
+        sections = self.sections(patch=patch)
         return sections[next(reversed(sections))]
 
-    def get(self, va: int = 0, name: str = "", patch: bool = False) -> PESection | None:
-        sections = self.sections(patch)
+    def get(self, va: int = 0, name: str = "", *, patch: bool = False) -> PESection | None:
+        sections = self.sections(patch=patch)
 
         if name:
             return sections.get(name)
 
         return self._in_virtual_range(va, sections.values())
 
-    def sections(self, patch: bool = False) -> OrderedDict[str, PESection]:
+    def sections(self, *, patch: bool = False) -> OrderedDict[str, PESection]:
         return self._patched_sections if patch else self._sections
 
-    def in_range(self, va: int, patch: bool = False) -> PESection | None:
+    def in_range(self, va: int, *, patch: bool = False) -> PESection | None:
         """Retrieve a section pof the PE file by virtual address.
 
         Args:
@@ -51,8 +51,8 @@ class PESectionManager:
         """
         return self.get(va=va, patch=patch)
 
-    def in_raw_range(self, offset: int, patch: bool = False) -> PESection | None:
-        sections = self.sections(patch)
+    def in_raw_range(self, offset: int, *, patch: bool = False) -> PESection | None:
+        sections = self.sections(patch=patch)
 
         for section in sections.values():
             if section.pointer_to_raw_data <= offset < section.pointer_to_raw_data + section.size_of_raw_data:
@@ -60,7 +60,7 @@ class PESectionManager:
 
         return None
 
-    def from_index(self, segment_index: int, patch: bool = False) -> PESection:
+    def from_index(self, segment_index: int, *, patch: bool = False) -> PESection:
         """Retrieve the section of the PE by index.
 
         Args:
@@ -71,7 +71,7 @@ class PESectionManager:
         Returns:
             A `PESection` corresponding to the segment_index.
         """
-        sections = self.sections(patch)
+        sections = self.sections(patch=patch)
 
         sections_items = list(sections.items())
 
