@@ -21,7 +21,7 @@ class Patcher:
     def __init__(self, pe: PE):
         self.pe = pe
         self.patched_pe = BytesIO()
-        self._section_manager = pe.section_manager
+        self._section_manager = pe.sections
         self.functions = []
 
     def build(self) -> BytesIO:
@@ -62,7 +62,7 @@ class Patcher:
             The new size of the PE as an `int`.
         """
 
-        last_section = self.pe.section_manager.last_section()
+        last_section = self.pe.sections.last_section()
         va = last_section.virtual_address
         size = last_section.virtual_size
 

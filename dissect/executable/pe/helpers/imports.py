@@ -218,7 +218,7 @@ class ImportManager:
             functions: A `list` of function names belonging to the module.
         """
 
-        self.last_section = self.pe.section_manager.last_section(patch=True)
+        self.last_section = self.pe.sections.last_section(patch=True)
 
         # Build a dummy import module
         _module = ImportModule(

@@ -55,7 +55,7 @@ class PE:
         self.section_header_offset = 0
         self.last_section_offset = 0
 
-        self.section_manager = sections.PESectionManager()
+        self.sections = sections.PESectionManager()
 
         self.imports: OrderedDict[str, imports.ImportModule] = None
         self.exports: OrderedDict[str, exports.ExportFunction] = None
@@ -146,9 +146,9 @@ class PE:
             section_header = c_pe.IMAGE_SECTION_HEADER(self.pe_file)
             section_name = section_header.Name.decode().strip("\x00")
             # Take note of the sections, keep track of any patches seperately
-            self.section_manager.add(section_name, sections.PESection(pe=self, section=section_header, offset=offset))
+            self.sections.add(section_name, sections.PESection(pe=self, section=section_header, offset=offset))
 
-        self.last_section_offset = self.section_manager.last_section().offset
+        self.last_section_offset = self.sections.last_section().offset
 
     def _section_in_range(self, address: int, values: Iterable[sections.PESection]) -> sections.PESection | None:
         for section in values:
@@ -168,7 +168,7 @@ class PE:
         """
 
         va = self.directory_entry_rva(index=index)
-        if section := self.section_manager.in_range(va, patch=True):
+        if section := self.sections.in_range(va, patch=True):
             return section
 
         raise InvalidVA(f"VA not found in sections: {va:#04x}")
@@ -234,7 +234,7 @@ class PE:
         if self.virtual:
             return address
 
-        if section := self.section_manager.in_range(address, patch=True):
+        if section := self.sections.in_range(address, patch=True):
             return section.pointer_to_raw_data + (address - section.virtual_address)
 
         raise InvalidVA(f"VA not found in sections: {address:#04x}")
@@ -248,7 +248,7 @@ class PE:
         Returns:
             The physical address as an `int`.
         """
-        if section := self.section_manager.in_raw_range(offset, patch=True):
+        if section := self.sections.in_raw_range(offset, patch=True):
             return section.virtual_address + (offset - section.pointer_to_raw_data)
 
         raise InvalidAddress(f"Raw address not found in sections: {offset:#04x}")
@@ -336,7 +336,7 @@ class PE:
         self.pe_file.write(data)
 
         # Update the section data
-        if section := self.section_manager.in_range(offset, patch=True):
+        if section := self.sections.in_range(offset, patch=True):
             self.seek(address=section.virtual_address)
             section.data = self.read(size=section.virtual_size)
 
@@ -406,7 +406,7 @@ class PE:
             The bytes that were read from the offset within the PE.
         """
 
-        _section = self.section_manager.from_index(segment_index=symbol.seg)
+        _section = self.sections.from_index(segment_index=symbol.seg)
         address = self.imagebase + _section.virtual_address + symbol.off
 
         self.pe_file.seek(address)
@@ -433,7 +433,7 @@ class PE:
         """
 
         # Take note of the last section
-        last_section = self.section_manager.last_section(patch=True)
+        last_section = self.sections.last_section(patch=True)
 
         # Calculate the new section size
         raw_size = utils.align_int(integer=len(data), blocksize=self.file_alignment)
@@ -471,10 +471,10 @@ class PE:
             self.optional_header.DataDirectory[datadirectory].Size = datadirectory_size or len(data)
 
         # Add the new section to the PE
-        self.section_manager.add(name, sections.PESection(pe=self, section=new_section, offset=offset, data=data))
+        self.sections.add(name, sections.PESection(pe=self, section=new_section, offset=offset, data=data))
 
         # Update the SizeOfImage field
-        last_section = self.section_manager.last_section(patch=True)
+        last_section = self.sections.last_section(patch=True)
         last_va = last_section.virtual_address
         last_size = last_section.virtual_size
 

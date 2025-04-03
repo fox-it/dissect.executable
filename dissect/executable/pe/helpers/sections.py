@@ -243,7 +243,7 @@ class PESection:
         """
 
         # Keep track of the section changes using the patched_sections dictionary
-        section_manager = self.pe.section_manager
+        section_manager = self.pe.sections
         patched_section: PESection = section_manager.get(name=self.name, patch=True)
         patched_section._data = value
         patched_section.size = len(value)

@@ -27,14 +27,14 @@ def test_resize_section_smaller() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-        pe.section_manager.get(name=".text").data = b"kusjesvanSRT, patched with dissect"
+        pe.sections.get(name=".text").data = b"kusjesvanSRT, patched with dissect"
 
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build())
 
-        assert new_pe.section_manager.get(name=".text").size == len(b"kusjesvanSRT, patched with dissect")
+        assert new_pe.sections.get(name=".text").size == len(b"kusjesvanSRT, patched with dissect")
         assert (
-            new_pe.section_manager.get(name=".text").data[: len(b"kusjesvanSRT, patched with dissect")]
+            new_pe.sections.get(name=".text").data[: len(b"kusjesvanSRT, patched with dissect")]
             == b"kusjesvanSRT, patched with dissect"
         )
 
@@ -43,14 +43,14 @@ def test_resize_section_bigger() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-        original_size = pe.section_manager.get(name=".rdata").size
+        original_size = pe.sections.get(name=".rdata").size
 
-        pe.section_manager.get(name=".rdata", patch=True).data += b"kusjesvanSRT, patched with dissect" * 100
+        pe.sections.get(name=".rdata", patch=True).data += b"kusjesvanSRT, patched with dissect" * 100
 
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build())
 
-        assert new_pe.section_manager.get(name=".rdata").size == original_size + len(
+        assert new_pe.sections.get(name=".rdata").size == original_size + len(
             b"kusjesvanSRT, patched with dissect" * 100
         )
 
@@ -94,5 +94,5 @@ def test_add_section() -> None:
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build())
 
-        assert ".SRT" in new_pe.section_manager.sections()
-        assert new_pe.section_manager.get(name=".SRT").data == b"kusjesvanSRT"
+        assert ".SRT" in new_pe.sections.sections()
+        assert new_pe.sections.get(name=".SRT").data == b"kusjesvanSRT"

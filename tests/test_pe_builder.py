@@ -64,7 +64,7 @@ def test_build_new_pe_with_custom_section() -> None:
 
     new_pe = PE(pe_file=patcher.build())
 
-    section_manager = new_pe.section_manager
+    section_manager = new_pe.sections
 
     section = section_manager.get(name=".SRT")
     assert section.name == ".SRT"

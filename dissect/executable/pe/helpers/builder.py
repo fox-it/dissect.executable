@@ -444,7 +444,7 @@ class Builder:
             The size of the PE.
         """
 
-        last_section = self.pe.section_manager.last_section(patch=True)
+        last_section = self.pe.sections.last_section(patch=True)
         va = last_section.virtual_address
         size = last_section.virtual_size
 
