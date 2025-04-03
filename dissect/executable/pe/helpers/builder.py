@@ -33,7 +33,7 @@ class Builder:
         self.dll = dll
         self.subsystem = subsystem
 
-        self.pe = None
+        self.pe: PE = None
 
     def new(self) -> None:
         """Build the PE file from scratch.
@@ -444,7 +444,7 @@ class Builder:
             The size of the PE.
         """
 
-        last_section = self.pe.patched_sections[next(reversed(self.pe.patched_sections))]
+        last_section = self.pe.section_manager.last_section(patch=True)
         va = last_section.virtual_address
         size = last_section.virtual_size
 

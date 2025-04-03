@@ -56,6 +56,8 @@ class PE:
         self.section_header_offset = 0
         self.last_section_offset = 0
 
+        self.section_manager = sections.PESectionManager()
+
         self.sections: OrderedDict[str, sections.PESection] = OrderedDict()
         self.patched_sections: OrderedDict[str, sections.PESection] = OrderedDict()
 
@@ -151,6 +153,7 @@ class PE:
             # Take note of the sections, keep track of any patches seperately
             self.sections[section_name] = sections.PESection(pe=self, section=section_header, offset=offset)
             self.patched_sections[section_name] = sections.PESection(pe=self, section=section_header, offset=offset)
+            self.section_manager.add(section_name, sections.PESection(pe=self, section=section_header, offset=offset))
 
         self.last_section_offset = self.sections[next(reversed(self.sections))].offset
 
@@ -172,10 +175,7 @@ class PE:
             A `PESection` object.
         """
 
-        if name:
-            return self.sections[name]
-
-        return self._section_in_range(va, self.sections.values())
+        return self.section_manager.get(va, name)
 
     def patched_section(self, va: int = 0, name: str = "") -> sections.PESection | None:
         """Function to retrieve a patched section based on the given virtual address or name.
@@ -188,10 +188,7 @@ class PE:
             A `PESection` object.
         """
 
-        if name:
-            return self.patched_sections[name]
-
-        return self._section_in_range(va, self.patched_sections.values())
+        return self.section_manager.get(va=va, name=name, patch=True)
 
     def datadirectory_section(self, index: int) -> sections.PESection:
         """Return the section that contains the given virtual address.
@@ -204,7 +201,7 @@ class PE:
         """
 
         va = self.directory_entry_rva(index=index)
-        if section := self._section_in_range(va, self.patched_sections.values()):
+        if section := self.section_manager.in_range(va, patch=True):
             return section
 
         raise InvalidVA(f"VA not found in sections: {va:#04x}")
@@ -270,7 +267,7 @@ class PE:
         if self.virtual:
             return address
 
-        if section := self._section_in_range(address, self.patched_sections.values()):
+        if section := self.section_manager.in_range(address, patch=True):
             return section.pointer_to_raw_data + (address - section.virtual_address)
 
         raise InvalidVA(f"VA not found in sections: {address:#04x}")
@@ -284,10 +281,8 @@ class PE:
         Returns:
             The physical address as an `int`.
         """
-
-        for section in self.patched_sections.values():
-            if section.pointer_to_raw_data <= offset < section.pointer_to_raw_data + section.size_of_raw_data:
-                return section.virtual_address + (offset - section.pointer_to_raw_data)
+        if section := self.section_manager.in_raw_range(offset, patch=True):
+            return section.virtual_address + (offset - section.pointer_to_raw_data)
 
         raise InvalidAddress(f"Raw address not found in sections: {offset:#04x}")
 
@@ -375,7 +370,7 @@ class PE:
         print(self.patched_sections)
 
         # Update the section data
-        if section := self._section_in_range(offset, self.patched_sections.values()):
+        if section := self.section_manager.in_range(offset, patch=True):
             self.seek(address=section.virtual_address)
             section.data = self.read(size=section.virtual_size)
 
@@ -489,7 +484,7 @@ class PE:
         """
 
         # Take note of the last section
-        last_section = self.patched_sections[next(reversed(self.sections))]
+        last_section = self.section_manager.last_section(patch=True)
 
         # Calculate the new section size
         raw_size = utils.align_int(integer=len(data), blocksize=self.file_alignment)
@@ -529,9 +524,10 @@ class PE:
         # Add the new section to the PE
         self.sections[name] = sections.PESection(pe=self, section=new_section, offset=offset, data=data)
         self.patched_sections[name] = sections.PESection(pe=self, section=new_section, offset=offset, data=data)
+        self.section_manager.add(name, sections.PESection(pe=self, section=new_section, offset=offset, data=data))
 
         # Update the SizeOfImage field
-        last_section = self.patched_sections[next(reversed(self.patched_sections))]
+        last_section = self.section_manager.last_section(patch=True)
         last_va = last_section.virtual_address
         last_size = last_section.virtual_size
 
@@ -562,5 +558,5 @@ class PE:
         """
 
         pepatcher = patcher.Patcher(pe=self)
-        new_pe = pepatcher.build
+        new_pe = pepatcher.build()
         Path(filename).write_bytes(new_pe.read())

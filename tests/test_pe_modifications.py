@@ -27,14 +27,14 @@ def test_resize_section_smaller() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-        pe.sections[".text"].data = b"kusjesvanSRT, patched with dissect"
+        pe.section_manager.get(name=".text").data = b"kusjesvanSRT, patched with dissect"
 
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build())
 
-        assert new_pe.sections[".text"].size == len(b"kusjesvanSRT, patched with dissect")
+        assert new_pe.section_manager.get(name=".text").size == len(b"kusjesvanSRT, patched with dissect")
         assert (
-            new_pe.sections[".text"].data[: len(b"kusjesvanSRT, patched with dissect")]
+            new_pe.section_manager.get(name=".text").data[: len(b"kusjesvanSRT, patched with dissect")]
             == b"kusjesvanSRT, patched with dissect"
         )
 

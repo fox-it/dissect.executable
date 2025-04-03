@@ -23,9 +23,9 @@ class PESectionManager:
         self._sections[name] = section
         self._patched_sections[name] = PESection(section.pe, section.section, section.offset, copy(section.data))
 
-    @property
-    def last_section(self) -> PESection:
-        return self._sections[next(reversed(self._sections))]
+    def last_section(self, *, patch: bool = False) -> PESection:
+        sections = self.sections(patch)
+        return sections[next(reversed(sections))]
 
     def get(self, va: int = 0, name: str = "", patch: bool = False) -> PESection | None:
         sections = self.sections(patch)
@@ -243,8 +243,10 @@ class PESection:
         """
 
         # Keep track of the section changes using the patched_sections dictionary
-        self.pe.patched_sections[self.name]._data = value
-        self.pe.patched_sections[self.name].size = len(value)
+        section_manager = self.pe.section_manager
+        patched_section: PESection = section_manager.get(name=self.name, patch=True)
+        patched_section._data = value
+        patched_section.size = len(value)
 
         # Set the new data and size
         self._data = value
@@ -255,14 +257,14 @@ class PESection:
             self._data += utils.pad(size=self.virtual_size - self.size_of_raw_data)
 
         # Take note of the first section as our starting point
-        first_section = next(iter(self.pe.patched_sections.values()))
+        first_section = next(iter(section_manager.sections(patch=True).values()))
 
         prev_ptr = first_section.pointer_to_raw_data
         prev_size = first_section.size_of_raw_data
         prev_va = first_section.virtual_address
         prev_vsize = first_section.virtual_size
 
-        for section in self.pe.patched_sections.values():
+        for section in section_manager.sections(patch=True).values():
             if section.virtual_address == prev_va:
                 continue
 

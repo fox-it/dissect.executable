@@ -61,7 +61,7 @@ class Patcher:
             The new size of the PE as an `int`.
         """
 
-        last_section = self.pe.patched_sections[next(reversed(self.pe.patched_sections))]
+        last_section = self.pe.section_manager.last_section()
         va = last_section.virtual_address
         size = last_section.virtual_size
 
@@ -85,11 +85,11 @@ class Patcher:
             self.patched_pe.write(utils.pad(size=self.pe.section_header_offset - self.patched_pe.tell()))
 
         # Write the section headers
-        for section in self.pe.patched_sections.values():
+        for section in self.pe.section_manager.sections(True).values():
             self.patched_pe.write(section.dump())
 
         # Add the data for each section
-        for section in self.pe.patched_sections.values():
+        for section in self.pe.section_manager.sections(True).values():
             self.patched_pe.seek(section.pointer_to_raw_data)
             self.patched_pe.write(section.data)
 
@@ -234,7 +234,7 @@ class Patcher:
             if not section:
                 continue
             address_offset = address - section.virtual_address
-            new_address = self.pe.patched_sections[section.name].virtual_address + address_offset
+            new_address = self.pe.section_manager.get(name=section.name).virtual_address + address_offset
             new_function_rvas.append(new_address)
 
         rva_struct = utils.create_struct("<I")
@@ -256,7 +256,7 @@ class Patcher:
                 continue
 
             address_offset = name_address - section.virtual_address
-            new_address = self.pe.patched_sections[section.name].virtual_address + address_offset
+            new_address = self.pe.patched_section(name=section.name).virtual_address + address_offset
             new_name_rvas.append(new_address)
 
         for name_rva in new_name_rvas:
@@ -315,7 +315,7 @@ class Patcher:
         if section := self.pe.section(va=tls_directory.StartAddressOfRawData - image_base):
             start_address_offset = tls_directory.StartAddressOfRawData - section.virtual_address
             tls_directory.StartAddressOfRawData = (
-                self.pe.patched_sections[section.name].virtual_address + start_address_offset
+                self.pe.patched_section(name=section.name).virtual_address + start_address_offset
             )
             end_address_offset = tls_directory.EndAddressOfRawData - tls_directory.StartAddressOfRawData
             tls_directory.EndAddressOfRawData = tls_directory.StartAddressOfRawData + end_address_offset
@@ -324,13 +324,13 @@ class Patcher:
         if section := self.pe.section(va=tls_directory.AddressOfCallBacks - image_base):
             address_of_callbacks_offset = tls_directory.AddressOfCallBacks - section.virtual_address
             tls_directory.AddressOfCallBacks = (
-                self.pe.patched_sections[section.name].virtual_address + address_of_callbacks_offset
+                self.pe.patched_section(name=section.name).virtual_address + address_of_callbacks_offset
             )
 
         # Patch the TLS AddressOfIndex
         if section := self.pe.section(va=tls_directory.AddressOfIndex - image_base):
-            address_of_index_offset = tls_directory.AddressOfIndex - self.pe.sections[section.name].virtual_address
-            tls_directory.AddressOfIndex = self.pe.sections[section.name].virtual_address + address_of_index_offset
+            address_of_index_offset = tls_directory.AddressOfIndex - section.virtual_address
+            tls_directory.AddressOfIndex = section.virtual_address + address_of_index_offset
 
         # Write the patched TLS directory to the new PE
         self.seek(directory_va)
