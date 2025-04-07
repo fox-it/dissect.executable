@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import struct
+from collections import OrderedDict
 from functools import lru_cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 if TYPE_CHECKING:
     from dissect.executable.pe import PE, PESection
@@ -55,6 +56,9 @@ def pad(size: int) -> bytes:
     return size * b"\x00"
 
 
+T = TypeVar("T")
+
+
 class Manager:
     def __init__(self, pe: PE, section: PESection) -> None:
         self.pe = pe
@@ -70,4 +74,30 @@ class Manager:
         raise NotImplementedError
 
     def patch(self, *args, **kwargs) -> None:
+        raise NotImplementedError
+
+
+class DictManager(Manager, Generic[T]):
+    elements: OrderedDict[str, T]
+
+    def __init__(self, pe: PE, section: PESection) -> None:
+        super().__init__(pe, section)
+        self.elements = OrderedDict()
+
+    def __getitem__(self, key: str) -> T:
+        return self.elements[key]
+
+    def add(self, name: str, elem: T) -> None:
+        self._add(name, elem)
+        self.elements.update({name: elem})
+
+    def delete(self, name: str) -> None:
+        if name in self.elements:
+            self._delete(name)
+        raise KeyError("Name not inside internal structure.")
+
+    def _add(self, name: str, elem: T) -> None:
+        raise NotImplementedError
+
+    def _delete(self, name: str) -> None:
         raise NotImplementedError

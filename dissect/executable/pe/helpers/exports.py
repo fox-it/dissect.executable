@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from collections import OrderedDict
 from dataclasses import dataclass
 from io import BytesIO
 from typing import TYPE_CHECKING
 
 from dissect.executable.pe.c_pe import c_pe
-from dissect.executable.pe.helpers.utils import Manager
+from dissect.executable.pe.helpers.utils import DictManager
 
 if TYPE_CHECKING:
     from dissect.executable.pe.helpers.sections import PESection
@@ -34,11 +33,9 @@ class ExportFunction:
         return f"<Export {self}>"
 
 
-class ExportManager(Manager):
+class ExportManager(DictManager[ExportFunction]):
     def __init__(self, pe: PE, section: PESection):
-        self.pe = pe
-        self.section = section
-        self.exports: OrderedDict[str, ExportFunction] = OrderedDict()
+        super().__init__(pe, section)
 
         self.parse()
 
@@ -80,10 +77,4 @@ class ExportManager(Manager):
                 export_name = c_pe.char[None](export_entry)
                 key = export_name.decode()
 
-            self.exports[key] = ExportFunction(ordinal=export_directory.Base + _idx, address=address, name=export_name)
-
-    def add(self) -> None:
-        raise NotImplementedError
-
-    def delete(self) -> None:
-        raise NotImplementedError
+            self.elements[key] = ExportFunction(ordinal=export_directory.Base + _idx, address=address, name=export_name)
