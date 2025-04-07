@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import struct
 from functools import lru_cache
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dissect.executable.pe import PE, PESection

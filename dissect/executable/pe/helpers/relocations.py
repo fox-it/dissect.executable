@@ -5,6 +5,7 @@ from io import BytesIO
 from typing import TYPE_CHECKING
 
 from dissect.executable.pe.c_pe import c_pe
+from dissect.executable.pe.helpers.utils import Manager
 
 if TYPE_CHECKING:
     from dissect.executable.pe.helpers.sections import PESection
@@ -18,7 +19,7 @@ class Relocation:
     entries: list[int]
 
 
-class RelocationManager:
+class RelocationManager(Manager):
     """Base class for dealing with the relocations within the PE file.
 
     Args:
@@ -27,13 +28,12 @@ class RelocationManager:
     """
 
     def __init__(self, pe: PE, section: PESection):
-        self.pe = pe
-        self.section = section
+        super().__init__(pe, section)
         self.relocations: list[Relocation] = []
 
-        self.parse_relocations()
+        self.parse()
 
-    def parse_relocations(self) -> None:
+    def parse(self) -> None:
         """Parse the relocation table of the PE file."""
 
         reloc_data = BytesIO(self.section.directory_data(c_pe.IMAGE_DIRECTORY_ENTRY_BASERELOC))
@@ -55,6 +55,3 @@ class RelocationManager:
                     entries=entries,
                 )
             )
-
-    def add(self) -> None:
-        raise NotImplementedError

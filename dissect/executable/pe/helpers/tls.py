@@ -4,13 +4,14 @@ from io import BytesIO
 from typing import TYPE_CHECKING
 
 from dissect.executable.pe.c_pe import c_pe
+from dissect.executable.pe.helpers.utils import Manager
 
 if TYPE_CHECKING:
     from dissect.executable.pe.helpers.sections import PESection
     from dissect.executable.pe.pe import PE
 
 
-class TLSManager:
+class TLSManager(Manager):
     """Base class to manage the TLS entries of a PE file.
 
     Args:
@@ -18,18 +19,17 @@ class TLSManager:
     """
 
     def __init__(self, pe: PE, section: PESection):
-        self.pe = pe
-        self.section = section
+        super().__init__(pe, section)
         self.callbacks = []
         self.tls: c_pe._IMAGE_TLS_DIRECTORY32 | c_pe._IMAGE_TLS_DIRECTORY64 = None
 
         self._read_address: type[c_pe.uint64 | c_pe.uint32] = None
         self._tls_directory: type[c_pe._IMAGE_TLS_DIRECTORY32 | c_pe._IMAGE_TLS_DIRECTORY64] = None
-        self._data = b""
-        self._image_base = pe.optional_header.ImageBase
+        self._data: bytes = b""
+        self._base_address = pe.optional_header.ImageBase
 
         self.set_architecture(pe)
-        self.parse_tls()
+        self.parse()
 
     def set_architecture(self, pe: PE) -> None:
         if pe.is64bit():
@@ -39,13 +39,13 @@ class TLSManager:
             self._read_address = c_pe.uint32
             self._tls_directory = c_pe._IMAGE_TLS_DIRECTORY32
 
-    def parse_tls(self) -> None:
+    def parse(self) -> None:
         """Parse the TLS directory entry of the PE file when present."""
 
         tls_data = BytesIO(self.section.directory_data(c_pe.IMAGE_DIRECTORY_ENTRY_TLS))
         self.tls = self._tls_directory(tls_data)
 
-        self.pe.seek(self.tls.AddressOfCallBacks - self._image_base)
+        self.pe.seek(self.tls.AddressOfCallBacks - self._base_address)
 
         # Parse the TLS callback addresses if present
         while True:
@@ -85,7 +85,7 @@ class TLSManager:
         """
 
         return self.pe.virtual_read(
-            address=self.tls.StartAddressOfRawData - self._image_base,
+            address=self.tls.StartAddressOfRawData - self._base_address,
             size=self.size,
         )
 
@@ -118,7 +118,7 @@ class TLSManager:
         section_data.write(self.tls.dumps())
 
         # Write the new TLS data to the section
-        start_address_rva = self.tls.StartAddressOfRawData - self._image_base
+        start_address_rva = self.tls.StartAddressOfRawData - self._base_address
         start_address_section_offset = start_address_rva - self.section.virtual_address
         section_data.seek(start_address_section_offset)
         section_data.write(self._data)
@@ -126,6 +126,3 @@ class TLSManager:
         # Update the section itself
         section_data.seek(0)
         self.section.data = section_data.read()
-
-    def add(self) -> None:
-        raise NotImplementedError

@@ -6,6 +6,7 @@ from io import BytesIO
 from typing import TYPE_CHECKING
 
 from dissect.executable.pe.c_pe import c_pe
+from dissect.executable.pe.helpers.utils import Manager
 
 if TYPE_CHECKING:
     from dissect.executable.pe.helpers.sections import PESection
@@ -33,15 +34,15 @@ class ExportFunction:
         return f"<Export {self}>"
 
 
-class ExportManager:
+class ExportManager(Manager):
     def __init__(self, pe: PE, section: PESection):
         self.pe = pe
         self.section = section
         self.exports: OrderedDict[str, ExportFunction] = OrderedDict()
 
-        self.parse_exports()
+        self.parse()
 
-    def parse_exports(self) -> None:
+    def parse(self) -> None:
         """Parse the export directory of the PE file.
 
         This function will store every export function within the PE file as an `ExportFunction` object containing the

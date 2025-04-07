@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from dissect.executable.exception import ResourceException
 from dissect.executable.pe.c_pe import c_pe
+from dissect.executable.pe.helpers.utils import Manager
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -26,6 +27,21 @@ class RawResource:
     data: bytes | None = None
     resource: Resource | None = None
 
+
+def rc_type(entry: c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY, data: BinaryIO, depth: int = 1) -> str:
+    """Returns the name of the rc type depending on the data and the depth level of the resource"""
+    if depth == 1:
+        return c_pe.ResourceID(entry.Id).name
+
+    if entry.NameIsString:
+        data.seek(entry.NameOffset)
+        name_len = c_pe.uint16(data)
+        return c_pe.wchar[name_len](data)
+
+    return str(entry.Id)
+
+
+class ResourceManager(Manager):
     """Base class to perform actions regarding the resources within the PE file.
 
     Args:
@@ -140,7 +156,7 @@ class RawResource:
         entries = self._read_entries(data, directory)
 
         for entry in entries:
-            _rc_type = self._rc_type(entry, data, level)
+            _rc_type = rc_type(entry, data, level)
 
             if entry.DataIsDirectory:
                 resource[_rc_type] = self._read_resource(
@@ -152,17 +168,6 @@ class RawResource:
                 resource[_rc_type] = self._handle_data_entry(data=data, entry=entry, rc_type=_rc_type)
 
         return resource
-
-    def _rc_type(self, entry: c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY, data: BinaryIO, level: int = 1) -> str:
-        if level == 1:
-            return c_pe.ResourceID(entry.Id).name
-
-        if entry.NameIsString:
-            data.seek(entry.NameOffset)
-            name_len = c_pe.uint16(data)
-            return c_pe.wchar[name_len](data)
-
-        return str(entry.Id)
 
     def by_name(self, name: str) -> Resource:
         """Retrieve the resource by name.
@@ -244,14 +249,6 @@ class RawResource:
                     f"* resource: {name} offset=0x{resource.offset:02x} size=0x{resource.size:02x} header: {resource.data[:64]}"  # noqa: E501
                 )
 
-    def add(self, name: str, data: bytes) -> None:
-        # TODO
-        raise NotImplementedError
-
-    def delete(self, name: str) -> None:
-        # TODO
-        raise NotImplementedError
-
     def update_section(self, update_offset: int) -> None:
         """Function to dynamically update the section data and size when a resource has been modified.
 
@@ -268,11 +265,6 @@ class RawResource:
         section_data = self.section.data[:header_size]
 
         for resource in chain([first_resource], resource_iter):
-            # Take note of the previous offset and size so we can update any of these values after changing the data
-            # within the resource
-            prev_offset = resource.offset
-            prev_size = resource.size
-
             # Update the resource data
             section_data += resource.data
 
@@ -282,8 +274,7 @@ class RawResource:
             if update_offset >= resource.offset:
                 continue
 
-            offset = prev_offset + prev_size + 2
-            resource.offset = offset
+            resource.offset = resource.offset + resource.size + 2
 
         # Add the header to the total size so we can check if we need to update the section size
         new_size += header_size

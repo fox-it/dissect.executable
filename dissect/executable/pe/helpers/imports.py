@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, BinaryIO
 
 from dissect.executable.pe.c_pe import c_pe
 from dissect.executable.pe.helpers import utils
-from dissect.executable.pe.helpers.utils import create_struct
+from dissect.executable.pe.helpers.utils import Manager, create_struct
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -108,7 +108,7 @@ class ImportFunction:
         return f"<ImportFunction {self.name}>"
 
 
-class ImportManager:
+class ImportManager(Manager):
     """The base class for dealing with the imports that are present within the PE file.
 
     Args:
@@ -117,9 +117,8 @@ class ImportManager:
     """
 
     def __init__(self, pe: PE, section: PESection):
-        self.pe = pe
-        self.image_size: int = self.pe.optional_header.SizeOfImage
-        self.section = section
+        super().__init__(pe, section)
+        self.image_size: int = pe.optional_header.SizeOfImage
         self.import_directory_rva = 0
         self.import_data = bytearray()
         self.new_size_of_image = 0
@@ -131,7 +130,7 @@ class ImportManager:
         self._high_bit: int = 0
 
         self.set_architecture(pe)
-        self.parse_imports()
+        self.parse()
 
     def set_architecture(self, pe: PE) -> None:
         if pe.is64bit():
@@ -141,7 +140,7 @@ class ImportManager:
             self._thunk_data = c_pe.IMAGE_THUNK_DATA32
             self._high_bit = 1 << 31
 
-    def parse_imports(self) -> None:
+    def parse(self) -> None:
         """Parse the imports of the PE file.
 
         The imports are in turn added to the `imports` attribute so they can be accessed by the user.
