@@ -282,8 +282,7 @@ class ResourceManager(DictManager["Resource"]):
         # Add the header to the total size so we can check if we need to update the section size
         new_size += header_size
 
-        # Update the section
-        self.section.data = section_data
+        self.pe.sections.patch(self.section.name, section_data)
 
 
 class Resource:
@@ -429,7 +428,7 @@ class Resource:
         data = section_data.read()
 
         # Update the section data and size
-        self.section.data = data
+        self.pe.sections.patch(self.section.name, data)
         self.pe.optional_header.DataDirectory[c_pe.IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = len(data)
 
     def __str__(self) -> str:

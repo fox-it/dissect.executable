@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from copy import copy
+from itertools import chain
 from typing import TYPE_CHECKING
 
 from dissect.executable.exception import BuildSectionException
@@ -15,9 +16,11 @@ if TYPE_CHECKING:
 
 
 class PESectionManager:
-    def __init__(self) -> None:
+    def __init__(self, file_alignment: int, section_alignment: int) -> None:
         self._sections: OrderedDict[str, PESection] = OrderedDict()
         self._patched_sections: OrderedDict[str, PESection] = OrderedDict()
+        self._file_alignment = file_alignment
+        self._section_alignment = section_alignment
 
     def add(self, name: str, section: PESection) -> None:
         self._sections[name] = section
@@ -86,6 +89,50 @@ class PESectionManager:
                 return section
 
         return None
+
+    def patch(self, name: str, data: bytes) -> None:
+        """Sets the new data of the resource and dynamically updates the other patched sections.
+
+        Args:
+            name: The section to patch
+            data: The data to patch it with
+        """
+        patched_section: PESection = self._patched_sections[name]
+
+        # Update the patched section data and size
+        patched_section._data = data
+        patched_section.size = len(data)
+
+        if patched_section.size_of_raw_data < patched_section.virtual_size:
+            patched_section._data += utils.pad(size=patched_section.virtual_size - patched_section.size_of_raw_data)
+
+        iterator = iter(self.sections(patch=True).values())
+        first_section = next(iterator)
+
+        prev_ptr = first_section.pointer_to_raw_data
+        prev_size = first_section.size_of_raw_data
+        prev_va = first_section.virtual_address
+        prev_vsize = first_section.virtual_size
+
+        for section in chain([first_section], iterator):
+            if section.virtual_address == prev_va:
+                continue
+
+            pointer_to_raw_data = utils.align_int(integer=prev_ptr + prev_size, blocksize=self._file_alignment)
+            virtual_address = utils.align_int(integer=prev_va + prev_vsize, blocksize=self._section_alignment)
+
+            if section.virtual_address < virtual_address:
+                """Set the virtual address and raw pointer of the section to the new values, but only do so if the
+                section virtual address is lower than the previous section. We want to prevent messing up RVA's as
+                much as possible, this could lead to binaries that are a bit larger than they need to be but that
+                doesn't really matter."""
+                section.virtual_address = virtual_address
+                section.pointer_to_raw_data = pointer_to_raw_data
+
+            prev_ptr = pointer_to_raw_data
+            prev_size = section.size_of_raw_data
+            prev_va = virtual_address
+            prev_vsize = section.virtual_size
 
 
 class PESection:
@@ -229,60 +276,6 @@ class PESection:
     def data(self) -> bytes:
         """Return the data within the section."""
         return self._data[: self.virtual_size]
-
-    @data.setter
-    def data(self, value: bytes) -> None:
-        """Setter to set the new data of the resource, but also dynamically update the offset of the resources within
-        the same directory.
-
-        This function currently also updates the section sizes and alignment. Ideally this would be moved to a more
-        abstract function that can handle tasks like these in a more transparant manner.
-
-        Args:
-            value: The new data of the resource.
-        """
-
-        # Keep track of the section changes using the patched_sections dictionary
-        section_manager = self.pe.sections
-        patched_section: PESection = section_manager.get(name=self.name, patch=True)
-        patched_section._data = value
-        patched_section.size = len(value)
-
-        # Set the new data and size
-        self._data = value
-        self.size = len(value)
-
-        # Pad the remainder of the section if the SizeOfRawData is smaller than the VirtualSize
-        if self.size_of_raw_data < self.virtual_size:
-            self._data += utils.pad(size=self.virtual_size - self.size_of_raw_data)
-
-        # Take note of the first section as our starting point
-        first_section = next(iter(section_manager.sections(patch=True).values()))
-
-        prev_ptr = first_section.pointer_to_raw_data
-        prev_size = first_section.size_of_raw_data
-        prev_va = first_section.virtual_address
-        prev_vsize = first_section.virtual_size
-
-        for section in section_manager.sections(patch=True).values():
-            if section.virtual_address == prev_va:
-                continue
-
-            pointer_to_raw_data = utils.align_int(integer=prev_ptr + prev_size, blocksize=self.pe.file_alignment)
-            virtual_address = utils.align_int(integer=prev_va + prev_vsize, blocksize=self.pe.section_alignment)
-
-            if section.virtual_address < virtual_address:
-                """Set the virtual address and raw pointer of the section to the new values, but only do so if the
-                section virtual address is lower than the previous section. We want to prevent messing up RVA's as
-                much as possible, this could lead to binaries that are a bit larger than they need to be but that
-                doesn't really matter."""
-                section.virtual_address = virtual_address
-                section.pointer_to_raw_data = pointer_to_raw_data
-
-            prev_ptr = pointer_to_raw_data
-            prev_size = section.size_of_raw_data
-            prev_va = virtual_address
-            prev_vsize = section.virtual_size
 
     def dump(self) -> bytes:
         """Return the section header as a `bytes` object."""

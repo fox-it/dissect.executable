@@ -55,8 +55,6 @@ class PE:
         self.section_header_offset = 0
         self.last_section_offset = 0
 
-        self.sections = sections.PESectionManager()
-
         self.imports: imports.ImportManager = None
         self.exports: exports.ExportManager = None
         self.resources: resources.ResourceManager = None
@@ -76,6 +74,7 @@ class PE:
         self.section_alignment = self.nt_headers.OptionalHeader.SectionAlignment
         self.timestamp = datetime.fromtimestamp(self.file_header.TimeDateStamp, tz=timezone.utc)
 
+        self.sections = sections.PESectionManager(self.file_alignment, self.section_alignment)
         # Parse the section header
         self.parse_section_header()
 
@@ -189,7 +188,6 @@ class PE:
 
             # Take note of the current directory VA so we can dynamically update it when resizing sections
             section = self.datadirectory_section(index=idx)
-
             section_dir = self.optional_header.DataDirectory[idx]
 
             directory_va_offset = section_dir.VirtualAddress - section.virtual_address

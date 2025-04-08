@@ -125,4 +125,4 @@ class TLSManager(ListManager[int]):
 
         # Update the section itself
         section_data.seek(0)
-        self.section.data = section_data.read()
+        self.pe.sections.patch(self.section.name, section_data.read())

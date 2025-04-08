@@ -27,7 +27,7 @@ def test_resize_section_smaller() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-        pe.sections.get(name=".text").data = b"kusjesvanSRT, patched with dissect"
+        pe.sections.patch(name=".text", data=b"kusjesvanSRT, patched with dissect")
 
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build())
@@ -43,9 +43,12 @@ def test_resize_section_bigger() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-        original_size = pe.sections.get(name=".rdata").size
+        section = pe.sections.get(name=".rdata")
 
-        pe.sections.get(name=".rdata", patch=True).data += b"kusjesvanSRT, patched with dissect" * 100
+        original_size = section.size
+
+        patch_data = section.data + b"kusjesvanSRT, patched with dissect" * 100
+        pe.sections.patch(name=".rdata", data=patch_data)
 
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build())
