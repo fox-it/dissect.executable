@@ -63,6 +63,66 @@ class ResourceManager(DictManager["Resource"]):
         rsrc_data = BytesIO(self.section.directory_data(c_pe.IMAGE_DIRECTORY_ENTRY_RESOURCE))
         self.elements = self._read_resource(data=rsrc_data, offset=0)
 
+    def patch(self, name: str, data: bytes) -> None:
+        """Sets the new data of the resource and updates the offsets with the resources within the same directory.
+
+        Resource looks like this:
+
+        | Resource headers (1*...) |
+        | ------------------------ |
+        | Resource data (1*...)    |
+
+        So it is not important in what order the metadata of the entry gets written.
+        """
+        try:
+            resource = next(self.by_type(name))
+        except StopIteration:
+            raise ValueError(f"Could not find a resource by type for {name}")
+
+        # TODO: Still rewrites the data to the original instance. Maybe we should change that.
+        resource._data = data
+        resource.size = len(data)
+
+        output = BytesIO()
+        prev_offset = prev_size = 0
+
+        for rsrc_entry in self.raw(lambda rsrc: rsrc.data_offset):
+            entry_offset = rsrc_entry.offset
+            entry = rsrc_entry.entry
+
+            # Write the resource entry into the section
+            output.seek(entry_offset)
+            output.write(entry.dumps())
+
+            if not isinstance(entry, c_pe.IMAGE_RESOURCE_DATA_ENTRY):
+                continue
+
+            rsrc_obj = rsrc_entry.resource
+            data_offset = rsrc_entry.data_offset
+
+            # Normally the data is separated by a null byte, increment the new offset by 1
+            new_data_offset = prev_offset + prev_size
+            # if new_data_offset and (new_data_offset > data_offset or new_data_offset < data_offset):
+            if new_data_offset and new_data_offset != data_offset:
+                data_offset = new_data_offset
+                rsrc_entry.data_offset = data_offset
+                rsrc_obj.offset = self.section.virtual_address + data_offset
+
+            # Write the resource entry data into the section
+            output.seek(data_offset)
+            output.write(rsrc_obj.data)
+
+            # Take note of the offset and size so we can update any of these values after changing the data within
+            # the resource
+            prev_offset = data_offset
+            prev_size = rsrc_obj.size
+
+        output.seek(0)
+        _data = output.read()
+
+        self.pe.sections.patch(self.section.name, _data)
+        self.pe.optional_header.DataDirectory[c_pe.IMAGE_DIRECTORY_ENTRY_RESOURCE].size = len(_data)
+
     def _read_entries(
         self, data: BinaryIO, directory: c_pe.IMAGE_RESOURCE_DIRECTORY
     ) -> list[c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY]:
@@ -369,67 +429,6 @@ class Resource:
     def data(self) -> bytes:
         """Return the data within the resource."""
         return self._data
-
-    @data.setter
-    def data(self, value: bytes) -> None:
-        """Setter to set the new data of the resource, but also dynamically update the offset of the resources within
-        the same directory.
-
-        This function currently also updates the section sizes and alignment. Ideally this would be moved to a more
-        abstract function that
-        can handle tasks like these in a more transparant manner.
-
-        Args:
-            value: The new data of the resource.
-        """
-
-        # Set the new data
-        self._data = value
-
-        if len(value) != self.entry.Size:
-            self.size = len(value)
-
-        section_data = BytesIO()
-
-        prev_offset = 0
-        prev_size = 0
-
-        for rsrc_entry in self.pe.resources.raw(lambda rsrc: rsrc.data_offset):
-            entry_offset = rsrc_entry.offset
-            entry = rsrc_entry.entry
-            if isinstance(entry, c_pe.IMAGE_RESOURCE_DATA_ENTRY):
-                rsrc_obj = rsrc_entry.resource
-                data_offset = rsrc_entry.data_offset
-
-                # Normally the data is separated by a null byte, increment the new offset by 1
-                new_data_offset = prev_offset + prev_size
-                # if new_data_offset and (new_data_offset > data_offset or new_data_offset < data_offset):
-                if new_data_offset and new_data_offset != data_offset:
-                    data_offset = new_data_offset
-                    rsrc_entry.data_offset = data_offset
-                    rsrc_obj.offset = self.section.virtual_address + data_offset
-
-                data = rsrc_obj.data
-
-                # Write the resource entry data into the section
-                section_data.seek(data_offset)
-                section_data.write(data)
-
-                # Take note of the offset and size so we can update any of these values after changing the data within
-                # the resource
-                prev_offset = data_offset
-                prev_size = rsrc_obj.size
-
-            # Write the resource entry into the section
-            section_data.seek(entry_offset)
-            section_data.write(entry.dumps())
-
-        section_data.seek(0)
-        data = section_data.read()
-
-        # Update the section data and size
-        self.pe.sections.patch(self.section.name, data)
-        self.pe.optional_header.DataDirectory[c_pe.IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = len(data)
 
     def __str__(self) -> str:
         return str(self.name)

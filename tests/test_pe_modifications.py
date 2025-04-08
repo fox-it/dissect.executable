@@ -62,8 +62,7 @@ def test_resize_resource_smaller() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-        for e in pe.resources.by_type(rsrc_id="Manifest"):
-            e.data = b"kusjesvanSRT, patched with dissect"
+        pe.resources.patch("Manifest", b"kusjesvanSRT, patched with dissect")
 
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build())
@@ -77,8 +76,8 @@ def test_resize_resource_bigger() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-        for e in pe.resources.by_type(rsrc_id="Manifest"):
-            e.data = b"kusjesvanSRT, patched with dissect" + e.data
+        resource = next(pe.resources.by_type(rsrc_id="Manifest"))
+        pe.resources.patch("Manifest", b"kusjesvanSRT, patched with dissect" + resource.data)
 
         patcher = Patcher(pe=pe)
         new_pe = PE(pe_file=patcher.build())
