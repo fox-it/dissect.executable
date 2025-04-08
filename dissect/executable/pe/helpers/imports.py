@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import OrderedDict
 from io import BytesIO
 from typing import TYPE_CHECKING, BinaryIO
 
@@ -10,6 +9,7 @@ from dissect.executable.pe.helpers.utils import DictManager, create_struct
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from struct import Struct
 
     from dissect.executable.pe.helpers.sections import PESection
     from dissect.executable.pe.pe import PE
@@ -118,6 +118,7 @@ class ImportManager(DictManager[ImportModule]):
 
     def __init__(self, pe: PE, section: PESection):
         super().__init__(pe, section)
+        self._section_manager = pe.sections
         self.image_size: int = pe.optional_header.SizeOfImage
         self.import_directory_rva = 0
         self.import_data = bytearray()
@@ -126,6 +127,7 @@ class ImportManager(DictManager[ImportModule]):
         self.thunks: list[c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64] = []
 
         self._thunk_data: type[c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64] = None
+        self._thunkdata_packing: Struct = None
         self._high_bit: int = 0
 
         self.set_architecture(pe)
@@ -135,9 +137,11 @@ class ImportManager(DictManager[ImportModule]):
         if pe.is64bit():
             self._thunk_data = c_pe.IMAGE_THUNK_DATA64
             self._high_bit = 1 << 63
+            self._thunkdata_packing = create_struct("<Q")
         else:
             self._thunk_data = c_pe.IMAGE_THUNK_DATA32
             self._high_bit = 1 << 31
+            self._thunkdata_packing = create_struct("<L")
 
     def parse(self) -> None:
         """Parse the imports of the PE file.
@@ -216,7 +220,7 @@ class ImportManager(DictManager[ImportModule]):
             functions: A `list` of function names belonging to the module.
         """
 
-        self.last_section = self.pe.sections.last_section(patch=True)
+        self.last_section = self._section_manager.last_section(patch=True)
 
         # Build a dummy import module
         _module = ImportModule(
@@ -234,55 +238,56 @@ class ImportManager(DictManager[ImportModule]):
         self.elements[dllname] = _module
 
         # Rebuild the import table with the new import module and functions
-        self.build_import_table()
+        imports, import_rva, directory_size = self.build_import_table()
 
-    def build_import_table(self) -> None:
+        # Create a new section
+        section_data = utils.align_data(data=imports, blocksize=self.pe.file_alignment)
+        size = len(imports) + c_pe.IMAGE_SECTION_HEADER.size
+        self.pe.add_section(
+            name=".idata",
+            data=section_data,
+            datadirectory=c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT,
+            datadirectory_rva=import_rva,
+            datadirectory_size=directory_size,
+            size=size,
+        )
+
+    def build_import_table(self) -> tuple[bytearray, int, int]:
         """Function to rebuild the import table after a change has been made to the PE imports.
 
         Currently we're using the .idata section to store the imports, there might be a better way to do this but for
         now this will do.
         """
 
-        # Reset the known thunkdata
-        self.thunks = []
-
         import_descriptors: list[c_pe.IMAGE_IMPORT_DESCRIPTOR] = []
-        self.import_data = bytearray()
+        import_data = bytearray()
 
         for name, module in self.elements.items():
             # Take note of the current offset to store the modulename
-            name_offset = len(self.import_data)
-            self.import_data += name.encode() + b"\x00"
+            name_offset = len(import_data)
+            import_data += name.encode() + b"\x00"
 
             # Build the module imports and get the RVA of the first thunk to generate an import descriptor
-            first_thunk_rva = self._build_module_imports(functions=module.functions)
+            module_offset = len(import_data)
+            module_bytes, offsets = self._build_module_imports(module_offset, module.functions)
+            thunkdata = self._build_thunkdata(offsets)
+            import_data += module_bytes + thunkdata
+
             import_descriptor = self._build_import_descriptor(
-                first_thunk_rva=first_thunk_rva,
+                first_thunk_rva=self.image_size + module_offset + len(module_bytes),
                 name_rva=self.image_size + name_offset,
             )
             import_descriptors.append(import_descriptor)
 
-        datadirectory_size = 0
-
         # Take note of the RVA of the first import descriptor
-        import_rva = self.image_size + len(self.import_data)
-        for descriptor in import_descriptors:
-            self.import_data += descriptor.dumps()
-            datadirectory_size += len(descriptor)
+        import_rva = self.image_size + len(import_data)
+        descriptor_data = b"".join(descriptor.dumps() for descriptor in import_descriptors)
+        directory_size = len(descriptor_data)
+        import_data += descriptor_data
 
-        # Create a new section
-        section_data = utils.align_data(data=self.import_data, blocksize=self.pe.file_alignment)
-        size = len(self.import_data) + c_pe.IMAGE_SECTION_HEADER.size
-        self.pe.add_section(
-            name=".idata",
-            data=section_data,
-            datadirectory=c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT,
-            datadirectory_rva=import_rva,
-            datadirectory_size=datadirectory_size,
-            size=size,
-        )
+        return import_data, import_rva, directory_size
 
-    def _build_module_imports(self, functions: list[ImportFunction]) -> int:
+    def _build_module_imports(self, function_offset: int, functions: list[ImportFunction]) -> tuple[bytes, list]:
         """Function to build the imports for a module.
 
         This function is responsible for building the functions by name, as well as the associated thunkdata that is
@@ -296,19 +301,16 @@ class ImportManager(DictManager[ImportModule]):
         """
 
         function_offsets = []
-        _hint_struct = create_struct("<H")
+        hint = create_struct("<H")
+        offset = function_offset
+
+        output = bytearray()
         for idx, function in enumerate(functions):
-            function_offsets.append(len(self.import_data))
-            self.import_data += _hint_struct.pack(idx)  # Hint
-            self.import_data += function.name.encode() + b"\x00"  # Name
-
-        first_thunk_rva = self.image_size + len(self.import_data)
-
-        # Build the function thunkdata
-        thunkdata = self._build_thunkdata(import_rvas=function_offsets)
-        self.import_data += thunkdata
-
-        return first_thunk_rva
+            function_offsets.append(offset)
+            output += hint.pack(idx)
+            output += function.name.encode() + b"\x00"
+            offset = function_offset + len(output)
+        return (output, function_offsets)
 
     def _build_thunkdata(self, import_rvas: list[int]) -> bytes:
         """Function to build the thunkdata for the new import table.
@@ -320,18 +322,11 @@ class ImportManager(DictManager[ImportModule]):
             The thunkdata as a `bytes` object.
         """
 
-        packing = "<Q" if self.pe.file_header.Machine == c_pe.MachineType.IMAGE_FILE_MACHINE_AMD64 else "<L"
-        _struct = create_struct(packing)
-
         thunkdata: list[bytes] = []
-        thunkdata.extend(_struct.pack(rva + self.image_size) for rva in import_rvas)
-        thunkdata.append(_struct.pack(0))
+        thunkdata.extend(self._thunkdata_packing.pack(rva + self.image_size) for rva in import_rvas)
+        thunkdata.append(self._thunkdata_packing.pack(0))
 
-        output = b"".join(thunkdata)
-
-        self.thunks.append(self._thunk_data(output))
-
-        return output
+        return b"".join(thunkdata)
 
     def _build_import_descriptor(self, first_thunk_rva: int, name_rva: int) -> c_pe.IMAGE_IMPORT_DESCRIPTOR:
         """Function to build the import descriptor for the new import table.
