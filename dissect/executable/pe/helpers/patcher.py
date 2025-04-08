@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 from io import BytesIO
 from typing import TYPE_CHECKING
 
@@ -177,7 +176,7 @@ class Patcher:
                 new_address = new_virtual_address + va_offset
 
                 # Avoid overwriting the original data
-                tmp_thunkdata = copy.deepcopy(function.thunkdata)
+                tmp_thunkdata = self.pe.imports.thunk_struct()
                 tmp_thunkdata.u1.AddressOfData = new_address
                 tmp_thunkdata.u1.ForwarderString = new_address
                 tmp_thunkdata.u1.Function = new_address

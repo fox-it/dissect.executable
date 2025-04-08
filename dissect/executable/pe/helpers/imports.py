@@ -124,10 +124,9 @@ class ImportManager(DictManager[ImportModule]):
         self.import_data = bytearray()
         self.new_size_of_image = 0
         self.section_data = bytearray()
-        self.thunks: list[c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64] = []
 
-        self._thunk_data: type[c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64] = None
-        self._thunkdata_packing: Struct = None
+        self.thunk_struct: type[c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64] = None
+        self.thunk_pack_struct: Struct = None
         self._high_bit: int = 0
 
         self.set_architecture(pe)
@@ -135,13 +134,13 @@ class ImportManager(DictManager[ImportModule]):
 
     def set_architecture(self, pe: PE) -> None:
         if pe.is64bit():
-            self._thunk_data = c_pe.IMAGE_THUNK_DATA64
+            self.thunk_struct = c_pe.IMAGE_THUNK_DATA64
             self._high_bit = 1 << 63
-            self._thunkdata_packing = create_struct("<Q")
+            self.thunk_pack_struct = create_struct("<Q")
         else:
-            self._thunk_data = c_pe.IMAGE_THUNK_DATA32
+            self.thunk_struct = c_pe.IMAGE_THUNK_DATA32
             self._high_bit = 1 << 31
-            self._thunkdata_packing = create_struct("<L")
+            self.thunk_pack_struct = create_struct("<L")
 
     def parse(self) -> None:
         """Parse the imports of the PE file.
@@ -206,7 +205,7 @@ class ImportManager(DictManager[ImportModule]):
         self.pe.seek(offset)
 
         while True:
-            thunkdata = self._thunk_data(self.pe)
+            thunkdata = self.thunk_struct(self.pe)
             if not thunkdata.u1.Function:
                 break
 
@@ -323,8 +322,8 @@ class ImportManager(DictManager[ImportModule]):
         """
 
         thunkdata: list[bytes] = []
-        thunkdata.extend(self._thunkdata_packing.pack(rva + self.image_size) for rva in import_rvas)
-        thunkdata.append(self._thunkdata_packing.pack(0))
+        thunkdata.extend(self.thunk_pack_struct.pack(rva + self.image_size) for rva in import_rvas)
+        thunkdata.append(self.thunk_pack_struct.pack(0))
 
         return b"".join(thunkdata)
 
