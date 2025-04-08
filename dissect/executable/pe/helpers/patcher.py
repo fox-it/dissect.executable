@@ -166,9 +166,11 @@ class Patcher:
                 # Check the original RVA associated with the AddressOfData field in the thunkdata, retrieve the
                 # original VA
                 # and use it to also select the patched virtual address of this section that the RVA is located in
-                if section := self._section_manager.get(va=function.data_address):
-                    virtual_address = section.virtual_address
-                    new_virtual_address = self._section_manager.get(name=section.name, patch=True).virtual_address
+                if (section := self._section_manager.get(va=function.data_address)) is None:
+                    continue
+
+                virtual_address = section.virtual_address
+                new_virtual_address = self._section_manager.get(name=section.name, patch=True).virtual_address
 
                 # Calculate the offset using the VA of the section and update the thunkdata
                 va_offset = function.data_address - virtual_address
