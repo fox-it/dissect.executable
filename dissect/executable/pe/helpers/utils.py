@@ -6,6 +6,8 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from dissect.executable.pe import PE, PESection
 
 
@@ -59,10 +61,30 @@ def pad(size: int) -> bytes:
 T = TypeVar("T")
 
 
-class Manager:
+class Manager(Generic[T]):
+    elements: list[T] | OrderedDict[str, T]
+
     def __init__(self, pe: PE, section: PESection) -> None:
         self.pe = pe
         self.section = section
+
+    def __contains__(self, item: str | T) -> bool:
+        return item in self.elements
+
+    def __getitem__(self, item: str | int) -> T:
+        return self.elements[item]
+
+    def __iter__(self):
+        yield from self.elements
+
+    def __len__(self) -> int:
+        return len(self.elements)
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} {self.elements}>"
+
+    def values(self) -> Iterable[T]:
+        raise NotImplementedError
 
     def parse(self) -> None:
         raise NotImplementedError
@@ -70,34 +92,22 @@ class Manager:
     def add(self, *args, **kwargs) -> None:
         raise NotImplementedError
 
-    def delete(self, *args, **kwargs) -> None:
+    def delete(self, elem: int | str) -> None:
         raise NotImplementedError
 
-    def patch(self, *args, **kwargs) -> None:
+    def patch(self, elem: int | str, data: bytes) -> None:
         raise NotImplementedError
 
 
 class DictManager(Manager, Generic[T]):
-    elements: OrderedDict[str, T]
-
     def __init__(self, pe: PE, section: PESection) -> None:
         super().__init__(pe, section)
-        self.elements = OrderedDict()
+        self.elements: OrderedDict[str, T] = OrderedDict()
+        self.values = self.elements.values
 
-    def __getitem__(self, key: str) -> T:
-        return self.elements[key]
 
-    def add(self, name: str, elem: T) -> None:
-        self._add(name, elem)
-        self.elements.update({name: elem})
-
-    def delete(self, name: str) -> None:
-        if name in self.elements:
-            self._delete(name)
-        raise KeyError("Name not inside internal structure.")
-
-    def _add(self, name: str, elem: T) -> None:
-        raise NotImplementedError
-
-    def _delete(self, name: str) -> None:
-        raise NotImplementedError
+class ListManager(Manager, Generic[T]):
+    def __init__(self, pe: PE, section: PESection) -> None:
+        super().__init__(pe, section)
+        self.elements: list[T] = []
+        self.values = lambda: self.elements

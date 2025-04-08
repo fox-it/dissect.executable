@@ -4,14 +4,14 @@ from io import BytesIO
 from typing import TYPE_CHECKING
 
 from dissect.executable.pe.c_pe import c_pe
-from dissect.executable.pe.helpers.utils import Manager
+from dissect.executable.pe.helpers.utils import ListManager
 
 if TYPE_CHECKING:
     from dissect.executable.pe.helpers.sections import PESection
     from dissect.executable.pe.pe import PE
 
 
-class TLSManager(Manager):
+class TLSManager(ListManager[int]):
     """Base class to manage the TLS entries of a PE file.
 
     Args:
@@ -20,7 +20,7 @@ class TLSManager(Manager):
 
     def __init__(self, pe: PE, section: PESection):
         super().__init__(pe, section)
-        self.callbacks = []
+
         self.tls: c_pe._IMAGE_TLS_DIRECTORY32 | c_pe._IMAGE_TLS_DIRECTORY64 = None
 
         self._read_address: type[c_pe.uint64 | c_pe.uint32] = None
@@ -52,7 +52,7 @@ class TLSManager(Manager):
             callback_address = self._read_address(self.pe)
             if not callback_address:
                 break
-            self.callbacks.append(callback_address)
+            self.elements.append(callback_address)
 
         # Read the TLS data
         self._data = self.read_data()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from dataclasses import dataclass
+from functools import partial
 from io import BytesIO
 from itertools import chain
 from textwrap import indent
@@ -9,11 +10,11 @@ from typing import TYPE_CHECKING
 
 from dissect.executable.exception import ResourceException
 from dissect.executable.pe.c_pe import c_pe
-from dissect.executable.pe.helpers.utils import Manager
+from dissect.executable.pe.helpers.utils import DictManager
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-    from typing import BinaryIO
+    from typing import BinaryIO, Callable
 
     from dissect.executable.pe.helpers.sections import PESection
     from dissect.executable.pe.pe import PE
@@ -28,7 +29,7 @@ class RawResource:
     resource: Resource | None = None
 
 
-def rc_type(entry: c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY, data: BinaryIO, depth: int = 1) -> str:
+def rc_type_name(entry: c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY, data: BinaryIO, depth: int = 1) -> str:
     """Returns the name of the rc type depending on the data and the depth level of the resource"""
     if depth == 1:
         return c_pe.ResourceID(entry.Id).name
@@ -41,7 +42,7 @@ def rc_type(entry: c_pe.IMAGE_RESOURCE_DIRECTORY_ENTRY, data: BinaryIO, depth: i
     return str(entry.Id)
 
 
-class ResourceManager(Manager):
+class ResourceManager(DictManager["Resource"]):
     """Base class to perform actions regarding the resources within the PE file.
 
     Args:
@@ -50,18 +51,17 @@ class ResourceManager(Manager):
     """
 
     def __init__(self, pe: PE, section: PESection):
-        self.pe = pe
-        self.section = section
-        self.resources: OrderedDict[str, Resource] = OrderedDict()
+        super().__init__(pe, section)
+        self.elements: OrderedDict[str, Resource] = OrderedDict()
         self.raw_resources: list[RawResource] = []
-
+        self.values = partial(self._resources, self.elements)
         self.parse()
 
     def parse(self) -> None:
         """Parse the resource directory entry of the PE file."""
 
         rsrc_data = BytesIO(self.section.directory_data(c_pe.IMAGE_DIRECTORY_ENTRY_RESOURCE))
-        self.resources = self._read_resource(data=rsrc_data, offset=0, level=1)
+        self.elements = self._read_resource(data=rsrc_data, offset=0)
 
     def _read_entries(
         self, data: BinaryIO, directory: c_pe.IMAGE_RESOURCE_DIRECTORY
@@ -125,7 +125,7 @@ class ResourceManager(Manager):
         )
         return rsrc
 
-    def _read_resource(self, data: BinaryIO, offset: int, level: int = 1) -> OrderedDict[str, Resource]:
+    def _read_resource(self, data: BinaryIO, offset: int, depth: int = 1) -> OrderedDict[str, Resource]:
         """Recursively read the resources within the PE file.
 
         Each resource is added to the dictionary that is available to the user, as well as a list of
@@ -134,8 +134,7 @@ class ResourceManager(Manager):
         Args:
             data: The data of the resource.
             offset: The offset of the resource.
-            rc_type: The type of the resource.
-            level: The depth level of the resource, this dictates the resource type.
+            depth: The depth level of the resource, this dictates the resource type.
 
         Returns:
             A dictionary containing the resources that were found.
@@ -153,23 +152,21 @@ class ResourceManager(Manager):
             )
         )
 
-        entries = self._read_entries(data, directory)
-
-        for entry in entries:
-            _rc_type = rc_type(entry, data, level)
+        for entry in self._read_entries(data, directory):
+            rc_name = rc_type_name(entry, data, depth)
 
             if entry.DataIsDirectory:
-                resource[_rc_type] = self._read_resource(
+                resource[rc_name] = self._read_resource(
                     data=data,
                     offset=entry.OffsetToDirectory,
-                    level=level + 1,
+                    depth=depth + 1,
                 )
             else:
-                resource[_rc_type] = self._handle_data_entry(data=data, entry=entry, rc_type=_rc_type)
+                resource[rc_name] = self._handle_data_entry(data=data, entry=entry, rc_type=rc_name)
 
         return resource
 
-    def by_name(self, name: str) -> Resource:
+    def by_name(self, name: str) -> Resource | OrderedDict:
         """Retrieve the resource by name.
 
         Args:
@@ -180,7 +177,7 @@ class ResourceManager(Manager):
         """
 
         try:
-            return self.resources[name]
+            return self.elements[name]
         except KeyError:
             raise ResourceException(f"Resource {name} not found!")
 
@@ -196,13 +193,13 @@ class ResourceManager(Manager):
             All of the nodes that contain the requested type.
         """
 
-        if rsrc_id not in self.resources:
+        if rsrc_id not in self.elements:
             raise ResourceException(f"Resource with ID {rsrc_id} not found in PE!")
 
-        yield from self.parse_resources(resources=self.resources[rsrc_id])
+        yield from self._resources(resources=self.elements[rsrc_id])
 
-    def parse_resources(self, resources: OrderedDict[str, Resource]) -> Iterator[Resource]:
-        """Parse the resources within the PE file.
+    def _resources(self, resources: OrderedDict[str, Resource]) -> Iterator[Resource]:
+        """Iterates throught the resources inside the PE file.
 
         Args:
             resources: A `dict` containing the different resources that were found.
@@ -213,11 +210,11 @@ class ResourceManager(Manager):
 
         for resource in resources.values():
             if isinstance(resource, OrderedDict):
-                yield from self.parse_resources(resources=resource)
+                yield from self._resources(resources=resource)
             else:
                 yield resource
 
-    def show_resource_tree(self, resources: dict, indentation: int = 0) -> None:
+    def show_resource_tree(self, resources: OrderedDict[str, OrderedDict | Resource], indentation: int = 0) -> None:
         """Print the resources within the PE as a tree.
 
         Args:
@@ -249,6 +246,12 @@ class ResourceManager(Manager):
                     f"* resource: {name} offset=0x{resource.offset:02x} size=0x{resource.size:02x} header: {resource.data[:64]}"  # noqa: E501
                 )
 
+    def raw(self, sort_key: Callable | None = None) -> Iterator[RawResource]:
+        if sort_key:
+            yield from sorted(self.raw_resources, key=sort_key)
+        else:
+            yield from self.raw_resources
+
     def update_section(self, update_offset: int) -> None:
         """Function to dynamically update the section data and size when a resource has been modified.
 
@@ -258,7 +261,7 @@ class ResourceManager(Manager):
 
         new_size = 0
 
-        resource_iter = iter(self.parse_resources(resources=self.resources))
+        resource_iter = iter(self._resources(resources=self.elements))
         first_resource = next(resource_iter)
 
         header_size = first_resource.offset - self.section.virtual_address
@@ -392,7 +395,7 @@ class Resource:
         prev_offset = 0
         prev_size = 0
 
-        for rsrc_entry in sorted(self.pe.raw_resources, key=lambda rsrc: rsrc.data_offset):
+        for rsrc_entry in self.pe.resources.raw(lambda rsrc: rsrc.data_offset):
             entry_offset = rsrc_entry.offset
             entry = rsrc_entry.entry
             if isinstance(entry, c_pe.IMAGE_RESOURCE_DATA_ENTRY):

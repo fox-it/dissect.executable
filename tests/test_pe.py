@@ -44,7 +44,7 @@ def test_pe_imports() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-    assert known_imports == list(pe.imports)
+    assert known_imports == list(pe.imports.elements)
 
 
 def test_pe_exports() -> None:
@@ -60,7 +60,7 @@ def test_pe_exports() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-    assert known_exports == list(pe.exports)
+    assert known_exports == list(pe.exports.elements)
 
 
 def test_pe_resources() -> None:
@@ -95,4 +95,4 @@ def test_pe_tls_callbacks() -> None:
     with data_file("testexe.exe").open("rb") as pe_fh:
         pe = PE(pe_file=pe_fh)
 
-    assert pe.tls_callbacks == known_callbacks
+    assert pe.tls.elements == known_callbacks

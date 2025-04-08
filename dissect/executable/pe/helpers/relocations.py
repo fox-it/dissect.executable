@@ -5,7 +5,7 @@ from io import BytesIO
 from typing import TYPE_CHECKING
 
 from dissect.executable.pe.c_pe import c_pe
-from dissect.executable.pe.helpers.utils import Manager
+from dissect.executable.pe.helpers.utils import ListManager
 
 if TYPE_CHECKING:
     from dissect.executable.pe.helpers.sections import PESection
@@ -19,7 +19,7 @@ class Relocation:
     entries: list[int]
 
 
-class RelocationManager(Manager):
+class RelocationManager(ListManager[Relocation]):
     """Base class for dealing with the relocations within the PE file.
 
     Args:
@@ -29,7 +29,6 @@ class RelocationManager(Manager):
 
     def __init__(self, pe: PE, section: PESection):
         super().__init__(pe, section)
-        self.relocations: list[Relocation] = []
 
         self.parse()
 
@@ -48,7 +47,7 @@ class RelocationManager(Manager):
             number_of_entries = (reloc_directory.SizeOfBlock - len(reloc_directory.dumps())) // 2
             entries = [entry for _ in range(number_of_entries) if (entry := c_pe.uint16(reloc_data))]
 
-            self.relocations.append(
+            self.elements.append(
                 Relocation(
                     rva=reloc_directory.VirtualAddress,
                     number_of_entries=number_of_entries,

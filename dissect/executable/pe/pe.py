@@ -57,12 +57,11 @@ class PE:
 
         self.sections = sections.PESectionManager()
 
-        self.imports: OrderedDict[str, imports.ImportModule] = None
-        self.exports: OrderedDict[str, exports.ExportFunction] = None
-        self.resources: OrderedDict[str, resources.Resource] = None
-        self.raw_resources: list[resources.RawResource] = []
-        self.relocations: list[relocations.Relocation] = []
-        self.tls_callbacks = None
+        self.imports: imports.ImportManager = None
+        self.exports: exports.ExportManager = None
+        self.resources: resources.ResourceManager = None
+        self.relocations: relocations.RelocationManager = None
+        self.tls: tls.TLSManager = None
 
         self.directories = OrderedDict()
 
@@ -198,28 +197,22 @@ class PE:
 
             # Parse the Import Address Table (IAT)
             if idx == c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT:
-                self.import_mgr = imports.ImportManager(pe=self, section=section)
-                self.imports = self.import_mgr.imports
+                self.imports = imports.ImportManager(pe=self, section=section)
 
             if idx == c_pe.IMAGE_DIRECTORY_ENTRY_EXPORT:
-                self.export_mgr = exports.ExportManager(pe=self, section=section)
-                self.exports = self.export_mgr.exports
+                self.exports = exports.ExportManager(pe=self, section=section)
 
             # Parse the resources directory entry of the PE file
             if idx == c_pe.IMAGE_DIRECTORY_ENTRY_RESOURCE:
-                self.rsrc_mgr = resources.ResourceManager(pe=self, section=section)
-                self.resources = self.rsrc_mgr.resources
-                self.raw_resources = self.rsrc_mgr.raw_resources
+                self.resources = resources.ResourceManager(pe=self, section=section)
 
             # Parse the relocation directory entry of the PE file
             if idx == c_pe.IMAGE_DIRECTORY_ENTRY_BASERELOC:
-                self.reloc_mgr = relocations.RelocationManager(pe=self, section=section)
-                self.relocations = self.reloc_mgr.relocations
+                self.relocations = relocations.RelocationManager(pe=self, section=section)
 
             # Parse the TLS directory entry of the PE file
             if idx == c_pe.IMAGE_DIRECTORY_ENTRY_TLS:
-                self.tls_mgr = tls.TLSManager(pe=self, section=section)
-                self.tls_callbacks = self.tls_mgr.callbacks
+                self.tls = tls.TLSManager(pe=self, section=section)
 
     def virtual_address(self, address: int) -> int:
         """Return the virtual address given a (possible) physical address.

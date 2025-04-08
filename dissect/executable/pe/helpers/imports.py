@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, BinaryIO
 
 from dissect.executable.pe.c_pe import c_pe
 from dissect.executable.pe.helpers import utils
-from dissect.executable.pe.helpers.utils import Manager, create_struct
+from dissect.executable.pe.helpers.utils import DictManager, create_struct
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -108,7 +108,7 @@ class ImportFunction:
         return f"<ImportFunction {self.name}>"
 
 
-class ImportManager(Manager):
+class ImportManager(DictManager[ImportModule]):
     """The base class for dealing with the imports that are present within the PE file.
 
     Args:
@@ -123,7 +123,6 @@ class ImportManager(Manager):
         self.import_data = bytearray()
         self.new_size_of_image = 0
         self.section_data = bytearray()
-        self.imports: OrderedDict[str, ImportModule] = OrderedDict()
         self.thunks: list[c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64] = []
 
         self._thunk_data: type[c_pe.IMAGE_THUNK_DATA32 | c_pe.IMAGE_THUNK_DATA64] = None
@@ -170,7 +169,7 @@ class ImportManager(Manager):
                 ImportFunction(pe=self.pe, thunkdata=thunkdata, high_bit=self._high_bit)
                 for thunkdata in self.parse_thunks(offset=first_thunk)
             )
-            self.imports[modulename.decode()] = module
+            self.elements[modulename.decode()] = module
 
     def import_descriptors(self, import_data: BinaryIO) -> Iterator[tuple[int, c_pe.IMAGE_IMPORT_DESCRIPTOR]]:
         """Parse the import descriptors of the PE file.
@@ -232,13 +231,10 @@ class ImportManager(Manager):
             ImportFunction(pe=self.pe, thunkdata=None, high_bit=self._high_bit, name=function) for function in functions
         )
 
-        self.imports[dllname] = _module
+        self.elements[dllname] = _module
 
         # Rebuild the import table with the new import module and functions
         self.build_import_table()
-
-    def delete(self, dllname: str, functions: list) -> None:
-        raise NotImplementedError
 
     def build_import_table(self) -> None:
         """Function to rebuild the import table after a change has been made to the PE imports.
@@ -253,7 +249,7 @@ class ImportManager(Manager):
         import_descriptors: list[c_pe.IMAGE_IMPORT_DESCRIPTOR] = []
         self.import_data = bytearray()
 
-        for name, module in self.imports.items():
+        for name, module in self.elements.items():
             # Take note of the current offset to store the modulename
             name_offset = len(self.import_data)
             self.import_data += name.encode() + b"\x00"

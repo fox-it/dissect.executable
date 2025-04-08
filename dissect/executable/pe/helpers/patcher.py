@@ -274,7 +274,7 @@ class Patcher:
         section_data = BytesIO()
         self.seek(directory_va)
 
-        for rsrc_entry in sorted(self.pe.raw_resources, key=lambda rsrc: rsrc.data_offset):
+        for rsrc_entry in self.pe.resources.raw(lambda rsrc: rsrc.data_offset):
             entry_offset = rsrc_entry.offset
             entry = rsrc_entry.entry
 
@@ -305,7 +305,7 @@ class Patcher:
             return
 
         self.seek(directory_va)
-        tls_directory = self.pe.tls_mgr._tls_directory(self.patched_pe)
+        tls_directory = self.pe.tls._tls_directory(self.patched_pe)
 
         image_base = self.pe.optional_header.ImageBase
 
