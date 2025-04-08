@@ -25,8 +25,6 @@ from dissect.executable.pe.helpers import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     from dissect.cstruct.cstruct import cstruct
 
 
@@ -146,13 +144,6 @@ class PE:
 
         self.last_section_offset = self.sections.last_section().offset
 
-    def _section_in_range(self, address: int, values: Iterable[sections.PESection]) -> sections.PESection | None:
-        for section in values:
-            if section.virtual_address <= address < section.virtual_address + section.virtual_size:
-                return section
-
-        return None
-
     def datadirectory_section(self, index: int) -> sections.PESection:
         """Return the section that contains the given virtual address.
 
@@ -209,7 +200,7 @@ class PE:
             if idx == c_pe.IMAGE_DIRECTORY_ENTRY_TLS:
                 self.tls = tls.TLSManager(pe=self, section=section)
 
-    def virtual_address(self, address: int) -> int:
+    def virtual_address(self, physical_address: int) -> int:
         """Return the virtual address given a (possible) physical address.
 
         Args:
@@ -220,14 +211,14 @@ class PE:
         """
 
         if self.virtual:
-            return address
+            return physical_address
 
-        if section := self.sections.in_range(address, patch=True):
-            return section.pointer_to_raw_data + (address - section.virtual_address)
+        if section := self.sections.in_range(physical_address, patch=True):
+            return section.pointer_to_raw_data + (physical_address - section.virtual_address)
 
-        raise InvalidVA(f"VA not found in sections: {address:#04x}")
+        raise InvalidVA(f"VA not found in sections: {physical_address:#04x}")
 
-    def raw_address(self, offset: int) -> int:
+    def raw_address(self, virtual_address: int) -> int:
         """Return the physical address given a virtual address.
 
         Args:
@@ -236,10 +227,10 @@ class PE:
         Returns:
             The physical address as an `int`.
         """
-        if section := self.sections.in_raw_range(offset, patch=True):
-            return section.virtual_address + (offset - section.pointer_to_raw_data)
+        if section := self.sections.in_raw_range(virtual_address, patch=True):
+            return section.virtual_address + (virtual_address - section.pointer_to_raw_data)
 
-        raise InvalidAddress(f"Raw address not found in sections: {offset:#04x}")
+        raise InvalidAddress(f"Raw address not found in sections: {virtual_address:#04x}")
 
     def virtual_read(self, address: int, size: int) -> bytes:
         """Wrapper for reading virtual address offsets within a PE file.
@@ -252,7 +243,7 @@ class PE:
             The bytes that were read.
         """
 
-        physical_address = self.virtual_address(address=address)
+        physical_address = self.virtual_address(physical_address=address)
         if self.virtual:
             return self.pe_file.readoffset(offset=physical_address, size=size)
 
@@ -284,7 +275,7 @@ class PE:
             address: The virtual address to seek to.
         """
 
-        raw_address = self.virtual_address(address=address)
+        raw_address = self.virtual_address(physical_address=address)
         self.pe_file.seek(raw_address)
 
     def tell(self) -> int:
@@ -295,7 +286,7 @@ class PE:
         """
 
         offset = self.pe_file.tell()
-        return self.raw_address(offset=offset)
+        return self.raw_address(virtual_address=offset)
 
     def read(self, size: int) -> bytes:
         """Read x amount of bytes of the PE file.

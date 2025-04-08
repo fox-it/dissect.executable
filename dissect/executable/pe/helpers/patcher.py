@@ -75,7 +75,7 @@ class Patcher:
             address: The virtual address to seek to.
         """
 
-        raw_address = self.pe.virtual_address(address=address)
+        raw_address = self.pe.virtual_address(physical_address=address)
         self.patched_pe.seek(raw_address)
 
     def _build_section_table(self) -> None:
