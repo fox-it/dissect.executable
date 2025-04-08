@@ -167,6 +167,9 @@ class PESection:
         offset, size = dir_information
         return self.data[offset : offset + size]
 
+    def add_directory(self, index: int, section_dir: c_pe.IMAGE_DATA_DIRECTORY) -> None:
+        self.directories[index] = (section_dir.VirtualAddress - self.virtual_address, section_dir.Size)
+
     def read_data(self) -> bytes:
         """Return the data within the section.
 

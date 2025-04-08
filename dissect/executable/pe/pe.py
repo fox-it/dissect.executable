@@ -61,8 +61,6 @@ class PE:
         self.relocations: relocations.RelocationManager = None
         self.tls: tls.TLSManager = None
 
-        self.directories = OrderedDict()
-
         # We always want to parse the DOS header and NT headers
         self.parse_headers()
 
@@ -190,8 +188,7 @@ class PE:
             section = self.datadirectory_section(index=idx)
             section_dir = self.optional_header.DataDirectory[idx]
 
-            directory_va_offset = section_dir.VirtualAddress - section.virtual_address
-            section.directories[idx] = (directory_va_offset, section_dir.Size)
+            section.add_directory(idx, section_dir)
 
             # Parse the Import Address Table (IAT)
             if idx == c_pe.IMAGE_DIRECTORY_ENTRY_IMPORT:
