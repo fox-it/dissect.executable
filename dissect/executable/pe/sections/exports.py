@@ -8,8 +8,8 @@ from dissect.executable.pe.c_pe import c_pe
 from dissect.executable.utils import DictManager
 
 if TYPE_CHECKING:
-    from dissect.executable.pe.helpers.sections import PESection
     from dissect.executable.pe.pe import PE
+    from dissect.executable.pe.sections.sections import PESection
 
 
 @dataclass

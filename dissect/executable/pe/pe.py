@@ -14,7 +14,7 @@ from dissect.executable.exception import (
 )
 from dissect.executable.pe import patcher
 from dissect.executable.pe.c_pe import c_cv_info, c_pe
-from dissect.executable.pe.helpers import (
+from dissect.executable.pe.sections import (
     exports,
     imports,
     relocations,

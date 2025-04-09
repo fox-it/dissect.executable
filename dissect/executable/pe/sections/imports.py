@@ -11,8 +11,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from struct import Struct
 
-    from dissect.executable.pe.helpers.sections import PESection
     from dissect.executable.pe.pe import PE
+    from dissect.executable.pe.sections.sections import PESection
 
 
 class ImportModule:

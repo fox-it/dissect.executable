@@ -1,14 +1,14 @@
-from dissect.executable.pe.helpers.builder import Builder
-from dissect.executable.pe.helpers.exports import ExportFunction, ExportManager
-from dissect.executable.pe.helpers.imports import (
+from dissect.executable.pe.builder import Builder
+from dissect.executable.pe.patcher import Patcher
+from dissect.executable.pe.pe import PE
+from dissect.executable.pe.sections.exports import ExportFunction, ExportManager
+from dissect.executable.pe.sections.imports import (
     ImportFunction,
     ImportManager,
     ImportModule,
 )
-from dissect.executable.pe.helpers.patcher import Patcher
-from dissect.executable.pe.helpers.resources import Resource, ResourceManager
-from dissect.executable.pe.helpers.sections import PESection
-from dissect.executable.pe.pe import PE
+from dissect.executable.pe.sections.resources import Resource, ResourceManager
+from dissect.executable.pe.sections.sections import PESection
 
 __all__ = [
     "PE",

@@ -16,8 +16,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from typing import BinaryIO, Callable
 
-    from dissect.executable.pe.helpers.sections import PESection
     from dissect.executable.pe.pe import PE
+    from dissect.executable.pe.sections.sections import PESection
 
 
 @dataclass
