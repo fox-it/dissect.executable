@@ -24,7 +24,7 @@ class ExportFunction:
 
     ordinal: int
     address: int
-    name: bytes = b""
+    name: bytes | None = b""
 
     def __str__(self) -> str:
         return self.name.decode() if self.name else f"#{self.ordinal}"

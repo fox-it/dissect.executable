@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import OrderedDict
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
@@ -51,7 +50,6 @@ class PE:
         self.optional_header: c_pe.IMAGE_OPTIONAL_HEADER | c_pe.IMAGE_OPTIONAL_HEADER64 = None
 
         self.section_header_offset = 0
-        self.last_section_offset = 0
 
         self.imports: imports.ImportManager = None
         self.exports: exports.ExportManager = None
@@ -439,7 +437,6 @@ class PE:
 
         # Update the last section offset
         offset = last_section.offset + c_pe.IMAGE_SECTION_HEADER.size
-        self.last_section_offset = offset
 
         # Increment the NumberOfSections field
         self.file_header.NumberOfSections += 1

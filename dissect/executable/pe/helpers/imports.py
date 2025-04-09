@@ -293,6 +293,7 @@ class ImportManager(DictManager[ImportModule]):
         used to parse the imports at a later stage.
 
         Args:
+            function_offset: The start offset of the functions for this module
             functions: A `list` of `ImportFunction` objects.
 
         Returns:
