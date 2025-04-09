@@ -287,7 +287,14 @@ class Segment:
 
 
 class SegmentTable(Table[Segment]):
-    def __init__(self, fh: BinaryIO, offset: int, entries: int, size: int, c_elf: cstruct = c_elf_64):
+    def __init__(
+        self,
+        fh: BinaryIO,
+        offset: int,
+        entries: int,
+        size: int,
+        c_elf: cstruct = c_elf_64,
+    ):
         super().__init__(entries)
         self.fh = fh
         self.offset = offset

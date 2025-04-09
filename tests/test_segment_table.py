@@ -34,7 +34,9 @@ def create_segment_table(amount: int, random_data: bytes) -> SegmentTable:
     data_size = len(random_data)
     segments_data = []
     for idx in range(amount):
-        data = c_elf_64.Phdr(p_offset=len(c_elf_64.Phdr) * amount + idx * data_size, p_filesz=data_size).dumps()
+        data = c_elf_64.Phdr(
+            p_offset=len(c_elf_64.Phdr) * amount + idx * data_size, p_filesz=data_size
+        ).dumps()
         segments_data.append(data)
 
     segments_data.append(random_data * amount)
