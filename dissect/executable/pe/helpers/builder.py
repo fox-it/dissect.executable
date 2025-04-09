@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from io import BytesIO
 
+from dissect.executable import utils
 from dissect.executable.exception import BuildSectionException
 from dissect.executable.pe.c_pe import c_pe
-from dissect.executable.pe.helpers import utils
 from dissect.executable.pe.pe import PE
 
 STUB = b"\x0e\x1f\xba\x0e\x00\xb4\t\xcd!\xb8\x01L\xcd!This program is made with dissect.pe <3 kusjesvanSRT <3.\x0d\x0d\x0a$\x00\x00"  # noqa: E501

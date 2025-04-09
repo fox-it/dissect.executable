@@ -3,9 +3,9 @@ from __future__ import annotations
 from io import BytesIO
 from typing import TYPE_CHECKING, BinaryIO
 
+from dissect.executable import utils
 from dissect.executable.pe.c_pe import c_pe
-from dissect.executable.pe.helpers import utils
-from dissect.executable.pe.helpers.utils import DictManager, create_struct
+from dissect.executable.utils import DictManager, create_struct
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

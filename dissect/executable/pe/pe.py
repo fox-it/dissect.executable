@@ -5,6 +5,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO
 
+from dissect.executable import utils
 from dissect.executable.exception import (
     InvalidAddress,
     InvalidArchitecture,
@@ -20,7 +21,6 @@ from dissect.executable.pe.helpers import (
     resources,
     sections,
     tls,
-    utils,
 )
 
 if TYPE_CHECKING:

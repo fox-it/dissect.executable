@@ -5,9 +5,9 @@ from copy import copy
 from itertools import chain
 from typing import TYPE_CHECKING
 
+from dissect.executable import utils
 from dissect.executable.exception import BuildSectionException
 from dissect.executable.pe.c_pe import c_pe
-from dissect.executable.pe.helpers import utils
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

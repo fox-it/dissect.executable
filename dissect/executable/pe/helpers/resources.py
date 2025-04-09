@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from dissect.executable.exception import ResourceException
 from dissect.executable.pe.c_pe import c_pe
-from dissect.executable.pe.helpers.utils import DictManager
+from dissect.executable.utils import DictManager
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

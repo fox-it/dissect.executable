@@ -5,7 +5,7 @@ from io import BytesIO
 from typing import TYPE_CHECKING
 
 from dissect.executable.pe.c_pe import c_pe
-from dissect.executable.pe.helpers.utils import ListManager
+from dissect.executable.utils import ListManager
 
 if TYPE_CHECKING:
     from dissect.executable.pe.helpers.sections import PESection
