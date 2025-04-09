@@ -12,11 +12,11 @@ from dissect.executable.exception import (
     InvalidPE,
     InvalidVA,
 )
+from dissect.executable.pe import patcher
 from dissect.executable.pe.c_pe import c_cv_info, c_pe
 from dissect.executable.pe.helpers import (
     exports,
     imports,
-    patcher,
     relocations,
     resources,
     sections,
