@@ -6,20 +6,22 @@ from typing import TYPE_CHECKING
 import pytest
 
 from dissect.executable import ELF
-
-from .util import data_file
+from tests._utils import absolute_path
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 
 @pytest.mark.parametrize(
-    "file_name",
-    ["hello_world.out", "hello_world.stripped.out"],
+    "path",
+    [
+        "_data/elf/hello_world.out",
+        "_data/elf/hello_world.stripped.out",
+    ],
 )
-def test_dump(tmp_path: Path, file_name: str) -> None:
+def test_dump(path: str, tmp_path: Path) -> None:
     output_path = tmp_path / "output"
-    input_path = data_file(file_name)
+    input_path = absolute_path(path)
 
     with input_path.open("rb") as input_file:
         elf_file = ELF(input_file)

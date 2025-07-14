@@ -4,7 +4,7 @@ from io import BytesIO
 
 import pytest
 
-from dissect.executable import ELF
+from dissect.executable.elf.elf import ELF
 from dissect.executable.exception import InvalidSignatureError
 
 

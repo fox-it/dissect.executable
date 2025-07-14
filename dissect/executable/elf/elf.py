@@ -27,12 +27,14 @@ if TYPE_CHECKING:
 class ELF:
     def __init__(self, fh: BinaryIO):
         self.fh = fh
-        offset = fh.tell()
+
+        fh.seek(0)
         self.e_ident = fh.read(0x10)
-        fh.seek(offset)
 
         if self.e_ident[:4] != c_common_elf.ELFMAG:
-            raise InvalidSignatureError("Invalid header magic")
+            raise InvalidSignatureError(
+                f"Invalid ELF header magic, expected {c_common_elf.ELFMAG!r}, got {self.e_ident[:4]!r}"
+            )
 
         c_elf_version = c_elf_32
         if self.e_ident[c_common_elf.EI_CLASS] == c_common_elf.ELFCLASS64:
@@ -43,10 +45,12 @@ class ELF:
         is_little = self.e_ident[c_common_elf.EI_DATA] == c_common_elf.ELFDATA2LSB
         self.c_elf.endian = "<" if is_little else ">"
 
+        fh.seek(0)
         self.header = self.c_elf.Ehdr(fh)
+
         self.segments = SegmentTable.from_elf(self)
-        self.section_table = SectionTable.from_elf(self)
-        self.symbol_tables: list[SymbolTable] = self.section_table.by_type([SHT.SYMTAB, SHT.DYNSYM])
+        self.sections = SectionTable.from_elf(self)
+        self.symbol_tables: list[SymbolTable] = self.sections.by_type([SHT.SYMTAB, SHT.DYNSYM])
 
     def __repr__(self) -> str:
         return str(self.header)
@@ -54,9 +58,9 @@ class ELF:
     def dump(self) -> bytes:
         output_data = [
             self.segments.dump_table(),
-            self.section_table.dump_table(),
+            self.sections.dump_table(),
             *self.segments.dump_data(),
-            *self.section_table.dump_data(),
+            *self.sections.dump_data(),
         ]
         output_data.sort(key=itemgetter(0))
 
@@ -87,12 +91,12 @@ T = TypeVar("T")
 
 
 class Table(Generic[T]):
-    def __init__(self, entries: int) -> None:
-        self.entries = entries
-        self.items: list[T] = [None] * entries
+    def __init__(self, num: int) -> None:
+        self.num = num
+        self.items: list[T] = [None] * num
 
     def __iter__(self) -> Iterator[T]:
-        for idx in range(self.entries):
+        for idx in range(self.num):
             yield self[idx]
 
     def __getitem__(self, idx: int) -> T:
@@ -125,7 +129,7 @@ class Section:
 
     def __repr__(self) -> str:
         return (
-            f"<{self.__class__.__name__} idx={self.idx} name={self.name} type={self.type}"
+            f"<{self.__class__.__name__} idx={self.idx} name={self.name!r} type={self.type}"
             f" offset=0x{self.offset:x} size=0x{self.size:x}>"
         )
 
@@ -138,16 +142,12 @@ class Section:
             self._link = table[self.header.sh_link]
 
     @classmethod
-    def from_section_table(cls, section_table: SectionTable, idx: int) -> Section:
-        result = cls(section_table.fh, idx=idx, c_elf=section_table.c_elf)
-        result._set_link(section_table)
+    def from_section_table(cls, table: SectionTable, idx: int) -> Section:
+        result = cls(table.fh, idx=idx, c_elf=table.c_elf)
+        result._set_link(table)
 
-        string_table = section_table.string_table
-        if isinstance(result, StringTable):
-            string_table = result
-
-        if string_table:
-            result._set_name(string_table)
+        if sh_strtab := (result if idx == table._sh_strtab_idx else table._sh_strtab):
+            result._set_name(sh_strtab)
 
         return result
 
@@ -163,7 +163,7 @@ class Section:
         return self._link
 
     @cached_property
-    def contents(self) -> bytes:
+    def data(self) -> bytes:
         self.fh.seek(self.offset)
         return self.fh.read(self.size)
 
@@ -173,20 +173,22 @@ class SectionTable(Table[Section]):
         self,
         fh: BinaryIO,
         offset: int,
-        entries: int,
+        num: int,
         size: int,
-        string_index: int | None = None,
+        sh_strtab_idx: int | None = None,
         c_elf: cstruct = c_elf_64,
     ):
-        super().__init__(entries)
+        super().__init__(num)
         self.fh = fh
         self.offset = offset
         self.size = size
-        self.string_table = None
         self.c_elf = c_elf
 
-        if string_index:
-            self.string_table: StringTable = self[string_index]
+        self._sh_strtab_idx = sh_strtab_idx
+        self._sh_strtab = None
+
+        if sh_strtab_idx:
+            self._sh_strtab: StringTable = self[sh_strtab_idx]
 
     def __repr__(self) -> str:
         return f"<SectionTable offset=0x{self.offset:x} size=0x{self.size:x}>"
@@ -206,11 +208,14 @@ class SectionTable(Table[Section]):
 
     @classmethod
     def from_elf(cls, elf: ELF) -> SectionTable:
-        offset = elf.header.e_shoff
-        entries = elf.header.e_shnum
-        size = elf.header.e_shentsize
-        other_index = elf.header.e_shstrndx
-        return cls(elf.fh, offset, entries, size, other_index, elf.c_elf)
+        return cls(
+            elf.fh,
+            elf.header.e_shoff,
+            elf.header.e_shnum,
+            elf.header.e_shentsize,
+            elf.header.e_shstrndx,
+            elf.c_elf,
+        )
 
     def by_type(self, section_types: list[int] | int) -> list[Section]:
         types = section_types
@@ -223,14 +228,14 @@ class SectionTable(Table[Section]):
         return self.find(lambda x: x.is_related(segment))
 
     def by_name(self, name: str) -> list[Section]:
-        return self.find(lambda x: x.name in name)
+        return self.find(lambda x: name == x.name)
 
     def dump_table(self) -> tuple[int, bytes]:
         buf = bytearray()
         return self.offset, buf.join([x.header.dumps() for x in self])
 
     def dump_data(self) -> list[tuple[int, bytes]]:
-        return [(x.offset, x.contents) for x in self]
+        return [(x.offset, x.data) for x in self]
 
 
 class Segment:
@@ -268,7 +273,7 @@ class Segment:
         return self.offset <= section.offset < self.end
 
     @property
-    def contents(self) -> bytes:
+    def data(self) -> bytes:
         if not self._data:
             self.fh.seek(self.offset)
             self._data = self.fh.read(self.size)
@@ -320,7 +325,7 @@ class SegmentTable(Table[Segment]):
         return self.find(lambda x: x.type in types)
 
     def dump_data(self) -> list[tuple[int, bytearray]]:
-        return [(x.offset, x.contents) for x in self]
+        return [(x.offset, x.data) for x in self]
 
     def dump_table(self) -> tuple[int, bytearray]:
         buf = bytearray()
@@ -337,9 +342,9 @@ class StringTable(Section):
         return self._get_string(offset)
 
     def _get_string(self, index: int) -> str:
-        if index > len(self.contents) or index == SHN.UNDEF:
+        if index > self.size or index == SHN.UNDEF:
             return None
-        return self.c_elf.char[None](self.contents[index:]).decode("utf8")
+        return self.c_elf.char[None](self.data[index:]).decode("utf8")
 
 
 class Symbol:
@@ -372,7 +377,7 @@ class Symbol:
     @classmethod
     def from_symbol_table(cls, table: SymbolTable, idx: int) -> Symbol:
         offset = idx * table.entry_size
-        data = table.contents[offset : offset + table.entry_size]
+        data = table.data[offset : offset + table.entry_size]
         output = cls(io.BytesIO(data), idx, table.c_elf)
         output._set_name(table.link)
         return output

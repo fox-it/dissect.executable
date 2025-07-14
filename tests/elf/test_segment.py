@@ -16,4 +16,4 @@ def test_segment() -> None:
     segment = create_segment(orig_data)
     assert segment.offset == len(c_elf_64.Phdr)
     assert segment.size == len(orig_data)
-    assert segment.contents == orig_data
+    assert segment.data == orig_data
