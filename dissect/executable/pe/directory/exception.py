@@ -60,7 +60,7 @@ class ExceptionDirectory(DataDirectory):
         """List of exception entries."""
         self.pe.vfh.seek(self.address)
 
-        machine = self.pe.file_header.Machine
+        machine = self.pe.machine
         if machine in (c_pe.IMAGE_FILE_MACHINE.ARM, c_pe.IMAGE_FILE_MACHINE.THUMB, c_pe.IMAGE_FILE_MACHINE.ARMNT):
             ctype = c_pe.IMAGE_ARM_RUNTIME_FUNCTION_ENTRY
         elif machine == c_pe.IMAGE_FILE_MACHINE.ARM64:
