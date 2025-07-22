@@ -135,7 +135,7 @@ class PE:
 
     def is_reproducible(self) -> bool:
         """Return if the PE file is reproducible (i.e. has a REPRO debug entry)."""
-        return self.debug and any(entry.type == c_pe.IMAGE_DEBUG_TYPE.REPRO for entry in self.debug.entries)
+        return self.debug is not None and any(entry.type == c_pe.IMAGE_DEBUG_TYPE.REPRO for entry in self.debug.entries)
 
     def pdb_path(self) -> str | None:
         """Return the PDB path, if available."""
