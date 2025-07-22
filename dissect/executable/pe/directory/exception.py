@@ -31,6 +31,7 @@ class ExceptionDirectory(DataDirectory):
         | c_pe.IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY
         | c_pe.IMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY
         | c_pe.IMAGE_CE_RUNTIME_FUNCTION_ENTRY
+        | c_pe.IMAGE_MIPS_RUNTIME_FUNCTION_ENTRY
     ]:
         return iter(self.entries)
 
@@ -43,6 +44,7 @@ class ExceptionDirectory(DataDirectory):
         | c_pe.IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY
         | c_pe.IMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY
         | c_pe.IMAGE_CE_RUNTIME_FUNCTION_ENTRY
+        | c_pe.IMAGE_MIPS_RUNTIME_FUNCTION_ENTRY
     ):
         return self.entries[idx]
 
@@ -56,6 +58,7 @@ class ExceptionDirectory(DataDirectory):
         | c_pe.IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY
         | c_pe.IMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY
         | c_pe.IMAGE_CE_RUNTIME_FUNCTION_ENTRY
+        | c_pe.IMAGE_MIPS_RUNTIME_FUNCTION_ENTRY
     ]:
         """List of exception entries."""
         self.pe.vfh.seek(self.address)
@@ -69,6 +72,16 @@ class ExceptionDirectory(DataDirectory):
             ctype = c_pe.IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY
         elif machine == c_pe.IMAGE_FILE_MACHINE.ALPHA64:
             ctype = c_pe.IMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY
+        elif machine in (
+            c_pe.IMAGE_FILE_MACHINE.R3000,
+            c_pe.IMAGE_FILE_MACHINE.R4000,
+            c_pe.IMAGE_FILE_MACHINE.R10000,
+            c_pe.IMAGE_FILE_MACHINE.WCEMIPSV2,
+            c_pe.IMAGE_FILE_MACHINE.MIPS16,
+            c_pe.IMAGE_FILE_MACHINE.MIPSFPU,
+            c_pe.IMAGE_FILE_MACHINE.MIPSFPU16,
+        ):
+            ctype = c_pe.IMAGE_MIPS_RUNTIME_FUNCTION_ENTRY
         else:
             # May be wrong for esoteric architectures, but this is the default
             ctype = c_pe.IMAGE_RUNTIME_FUNCTION_ENTRY
