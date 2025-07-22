@@ -131,7 +131,7 @@ class PE:
 
     def is_64bit(self) -> bool:
         """Return if the PE file is 64-bit (PE32+)."""
-        return self.optional_header and self.optional_header.Magic == c_pe.IMAGE_NT_OPTIONAL_HDR64_MAGIC
+        return self.optional_header is not None and self.optional_header.Magic == c_pe.IMAGE_NT_OPTIONAL_HDR64_MAGIC
 
     def is_reproducible(self) -> bool:
         """Return if the PE file is reproducible (i.e. has a REPRO debug entry)."""
