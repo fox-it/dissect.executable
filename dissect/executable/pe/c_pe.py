@@ -235,7 +235,11 @@ enum IMAGE_SUBSYSTEM : USHORT {
 
 // DllCharacteristics Entries
 
-enum IMAGE_DLLCHARACTERISTICS : USHORT {
+flag IMAGE_DLLCHARACTERISTICS : USHORT {
+    PROCESS_INIT                = 0x0001,       // Reserved. (IMAGE_LIBRARY_PROCESS_INIT)
+    PROCESS_TERM                = 0x0002,       // Reserved. (IMAGE_LIBRARY_PROCESS_TERM)
+    THREAD_INIT                 = 0x0004,       // Reserved. (IMAGE_LIBRARY_THREAD_INIT)
+    THREAD_TERM                 = 0x0008,       // Reserved. (IMAGE_LIBRARY_THREAD_TERM)
     HIGH_ENTROPY_VA             = 0x0020,       // Image can handle a high entropy 64-bit virtual address space.
     DYNAMIC_BASE                = 0x0040,       // DLL can move.
     FORCE_INTEGRITY             = 0x0080,       // Code Integrity Image
@@ -1889,7 +1893,7 @@ enum IMAGE_DEBUG_TYPE : ULONG {
     PERFMAP                     = 21,
 };
 
-enum IMAGE_DLLCHARACTERISTICS_EX {
+flag IMAGE_DLLCHARACTERISTICS_EX {
     CET_COMPAT                  = 0x01,
     CET_COMPAT_STRICT_MODE      = 0x02,
     CET_SET_CONTEXT_IP_VALIDATION_RELAXED_MODE  = 0x04,
@@ -2139,7 +2143,7 @@ typedef struct IMPORT_OBJECT_HEADER {
 //
 
 // COM+ Header entry point flags.
-enum COMIMAGE_FLAGS : ULONG {
+flag COMIMAGE_FLAGS : ULONG {
     ILONLY                      = 0x00000001,
     32BITREQUIRED               = 0x00000002,
     IL_LIBRARY                  = 0x00000004,

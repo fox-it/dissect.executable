@@ -134,9 +134,9 @@ class CodeViewDebugEntry(DebugEntry):
         return getattr(self.info, "Age", None)
 
     @property
-    def pdb(self) -> str | None:
+    def pdb(self) -> str:
         """The PDB filename of the CodeView debug entry."""
-        return getattr(self.info, "PdbFileName", b"").decode() or None
+        return self.info.PdbFileName.decode()
 
 
 class VcFeatureDebugEntry(DebugEntry):

@@ -40,7 +40,9 @@ class LoadConfigDirectory(DataDirectory):
         return self.config.GuardFlags & ~c_pe.IMAGE_GUARD_CF_FUNCTION_TABLE_SIZE_MASK
 
     @property
-    def chpe(self) -> c_pe.IMAGE_ARM64EC_METADATA | c_pe.IMAGE_CHPE_METADATA_X86 | None:
+    def chpe(
+        self,
+    ) -> c_pe.IMAGE_ARM64EC_METADATA | c_pe.IMAGE_ARM64EC_METADATA_V2 | c_pe.IMAGE_CHPE_METADATA_X86 | None:
         """The CHPE (Compiled Hybrid Portable Executable) metadata."""
         if not self.config.CHPEMetadataPointer:
             return None

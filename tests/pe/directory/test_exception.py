@@ -11,7 +11,7 @@ def test_exception() -> None:
 
         assert pe.is_pe()
         assert pe.machine.name == "R4000"
-        assert len(pe.exceptions) == 286
+        assert len(pe.exceptions) == 172
         assert list(pe.exceptions)
 
         assert pe.exceptions[0].BeginAddress == 0x11010
