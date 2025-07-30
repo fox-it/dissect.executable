@@ -38,7 +38,7 @@ typedef struct _IMAGE_DOS_HEADER {              // DOS .EXE header
     USHORT      e_oeminfo;                      // OEM information; e_oemid specific
     USHORT      e_res2[10];                     // Reserved words
     LONG        e_lfanew;                       // File address of new exe header
-} IMAGE_DOS_HEADER;
+} IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
 
 typedef struct _IMAGE_OS2_HEADER {              // OS/2 .EXE header
     USHORT      ne_magic;                       // Magic number
@@ -71,7 +71,7 @@ typedef struct _IMAGE_OS2_HEADER {              // OS/2 .EXE header
     USHORT      ne_psegrefbytes;                // offset to segment ref. bytes
     USHORT      ne_swaparea;                    // Minimum code swap area size
     USHORT      ne_expver;                      // Expected Windows version number
-} IMAGE_OS2_HEADER;
+} IMAGE_OS2_HEADER, *PIMAGE_OS2_HEADER;
 
 typedef struct _IMAGE_VXD_HEADER {              // Windows VXD header
     USHORT      e32_magic;                      // Magic number
@@ -125,7 +125,7 @@ typedef struct _IMAGE_VXD_HEADER {              // Windows VXD header
     ULONG       e32_winreslen;
     USHORT      e32_devid;                      // Device ID for VxD
     USHORT      e32_ddkver;                     // DDK version for VxD
-} IMAGE_VXD_HEADER;
+} IMAGE_VXD_HEADER, *PIMAGE_VXD_HEADER;
 
 //
 // File header format.
@@ -196,7 +196,7 @@ typedef struct _IMAGE_FILE_HEADER {
     ULONG       NumberOfSymbols;
     USHORT      SizeOfOptionalHeader;
     IMAGE_FILE  Characteristics;
-} IMAGE_FILE_HEADER;
+} IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;
 
 //
 // Directory format.
@@ -205,7 +205,7 @@ typedef struct _IMAGE_FILE_HEADER {
 typedef struct _IMAGE_DATA_DIRECTORY {
     ULONG       VirtualAddress;
     ULONG       Size;
-} IMAGE_DATA_DIRECTORY;
+} IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;
 
 #define IMAGE_NUMBEROF_DIRECTORY_ENTRIES        16
 
@@ -294,7 +294,7 @@ typedef struct _IMAGE_OPTIONAL_HEADER {
     ULONG       LoaderFlags;
     ULONG       NumberOfRvaAndSizes;
     IMAGE_DATA_DIRECTORY        DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
-} IMAGE_OPTIONAL_HEADER32;
+} IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;
 
 typedef struct _IMAGE_OPTIONAL_HEADER64 {
     USHORT      Magic;
@@ -327,7 +327,7 @@ typedef struct _IMAGE_OPTIONAL_HEADER64 {
     ULONG       LoaderFlags;
     ULONG       NumberOfRvaAndSizes;
     IMAGE_DATA_DIRECTORY        DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
-} IMAGE_OPTIONAL_HEADER64;
+} IMAGE_OPTIONAL_HEADER64, *PIMAGE_OPTIONAL_HEADER64;
 
 #define IMAGE_NT_OPTIONAL_HDR32_MAGIC           0x10b
 #define IMAGE_NT_OPTIONAL_HDR64_MAGIC           0x20b
@@ -337,13 +337,13 @@ typedef struct _IMAGE_NT_HEADERS64 {
     ULONG                       Signature;
     IMAGE_FILE_HEADER           FileHeader;
     IMAGE_OPTIONAL_HEADER64     OptionalHeader;
-} IMAGE_NT_HEADERS64;
+} IMAGE_NT_HEADERS64, *PIMAGE_NT_HEADERS64;
 
 typedef struct _IMAGE_NT_HEADERS {
     ULONG                       Signature;
     IMAGE_FILE_HEADER           FileHeader;
     IMAGE_OPTIONAL_HEADER32     OptionalHeader;
-} IMAGE_NT_HEADERS32;
+} IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;
 
 // Directory Entries
 
@@ -440,14 +440,13 @@ typedef struct _IMAGE_SECTION_HEADER {
     USHORT      NumberOfRelocations;
     USHORT      NumberOfLinenumbers;
     IMAGE_SCN   Characteristics;
-} IMAGE_SECTION_HEADER;
+} IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;
 
 //
 // Symbol format.
 //
 
-
-
+/* TODO */
 
 //
 // Based relocation format.
@@ -487,7 +486,7 @@ typedef struct _IMAGE_BASE_RELOCATION {
     ULONG       VirtualAddress;
     ULONG       SizeOfBlock;
 //  USHORT      TypeOffset[1];
-} IMAGE_BASE_RELOCATION;
+} IMAGE_BASE_RELOCATION, *PIMAGE_BASE_RELOCATION;
 
 //
 // Archive format.
@@ -508,7 +507,7 @@ typedef struct _IMAGE_ARCHIVE_MEMBER_HEADER {
     CHAR        Mode[8];                        // File member mode - octal.
     CHAR        Size[10];                       // File member size - decimal.
     CHAR        EndHeader[2];                   // String to end header.
-} IMAGE_ARCHIVE_MEMBER_HEADER;
+} IMAGE_ARCHIVE_MEMBER_HEADER, *PIMAGE_ARCHIVE_MEMBER_HEADER;
 
 //
 // DLL support.
@@ -530,7 +529,7 @@ typedef struct _IMAGE_EXPORT_DIRECTORY {
     ULONG       AddressOfFunctions;             // RVA from base of image
     ULONG       AddressOfNames;                 // RVA from base of image
     ULONG       AddressOfNameOrdinals;          // RVA from base of image
-} IMAGE_EXPORT_DIRECTORY;
+} IMAGE_EXPORT_DIRECTORY, *PIMAGE_EXPORT_DIRECTORY;
 
 //
 // Import Format
@@ -539,7 +538,7 @@ typedef struct _IMAGE_EXPORT_DIRECTORY {
 typedef struct _IMAGE_IMPORT_BY_NAME {
     USHORT      Hint;
     CHAR        Name[];
-} IMAGE_IMPORT_BY_NAME;
+} IMAGE_IMPORT_BY_NAME, *PIMAGE_IMPORT_BY_NAME;
 
 typedef struct _IMAGE_THUNK_DATA64 {
     union {
@@ -548,7 +547,7 @@ typedef struct _IMAGE_THUNK_DATA64 {
         ULONGLONG   Ordinal;
         ULONGLONG   AddressOfData;              // PIMAGE_IMPORT_BY_NAME
     } u1;
-} IMAGE_THUNK_DATA64;
+} IMAGE_THUNK_DATA64, *PIMAGE_THUNK_DATA64;
 
 typedef struct _IMAGE_THUNK_DATA32 {
   union {
@@ -557,7 +556,7 @@ typedef struct _IMAGE_THUNK_DATA32 {
         ULONG   Ordinal;
         ULONG   AddressOfData;                  // PIMAGE_IMPORT_BY_NAME
   } u1;
-} IMAGE_THUNK_DATA32;
+} IMAGE_THUNK_DATA32, *PIMAGE_THUNK_DATA32;
 
 #define IMAGE_ORDINAL_FLAG64                    0x8000000000000000
 #define IMAGE_ORDINAL_FLAG32                    0x80000000
@@ -575,7 +574,7 @@ typedef struct _IMAGE_IMPORT_DESCRIPTOR {
     ULONG       ForwarderChain;                 // -1 if no forwarders
     ULONG       Name;
     ULONG       FirstThunk;                     // RVA to IAT (if bound this IAT has actual addresses)
-} IMAGE_IMPORT_DESCRIPTOR;
+} IMAGE_IMPORT_DESCRIPTOR, *PIMAGE_IMPORT_DESCRIPTOR;
 
 //
 // Thread Local Storage
@@ -595,7 +594,7 @@ typedef struct _IMAGE_TLS_DIRECTORY64 {
             ULONG   Reserved1 : 8;
         };
     };
-} IMAGE_TLS_DIRECTORY64;
+} IMAGE_TLS_DIRECTORY64, *PIMAGE_TLS_DIRECTORY64;
 
 typedef struct _IMAGE_TLS_DIRECTORY32 {
     ULONG       StartAddressOfRawData;
@@ -611,7 +610,7 @@ typedef struct _IMAGE_TLS_DIRECTORY32 {
             ULONG   Reserved1 : 8;
         };
     };
-} IMAGE_TLS_DIRECTORY32;
+} IMAGE_TLS_DIRECTORY32, *PIMAGE_TLS_DIRECTORY32;
 
 //
 // New format import descriptors pointed to by DataDirectory[ IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT ]
@@ -622,13 +621,13 @@ typedef struct _IMAGE_BOUND_IMPORT_DESCRIPTOR {
     USHORT      OffsetModuleName;
     USHORT      NumberOfModuleForwarderRefs;
 // Array of zero or more IMAGE_BOUND_FORWARDER_REF follows
-} IMAGE_BOUND_IMPORT_DESCRIPTOR;
+} IMAGE_BOUND_IMPORT_DESCRIPTOR, *PIMAGE_BOUND_IMPORT_DESCRIPTOR;
 
 typedef struct _IMAGE_BOUND_FORWARDER_REF {
     ULONG       TimeDateStamp;
     USHORT      OffsetModuleName;
     USHORT      Reserved;
-} IMAGE_BOUND_FORWARDER_REF;
+} IMAGE_BOUND_FORWARDER_REF, *PIMAGE_BOUND_FORWARDER_REF;
 
 typedef struct _IMAGE_DELAYLOAD_DESCRIPTOR {
     union {
@@ -647,7 +646,7 @@ typedef struct _IMAGE_DELAYLOAD_DESCRIPTOR {
     ULONG       UnloadInformationTableRVA;      // RVA to an optional unload info table
     ULONG       TimeDateStamp;                  // 0 if not bound,
                                                 // Otherwise, date/time of the target DLL
-} IMAGE_DELAYLOAD_DESCRIPTOR;
+} IMAGE_DELAYLOAD_DESCRIPTOR, *PIMAGE_DELAYLOAD_DESCRIPTOR;
 
 //
 // Resource Format.
@@ -699,7 +698,7 @@ typedef struct _IMAGE_RESOURCE_DIRECTORY {
     USHORT      NumberOfNamedEntries;
     USHORT      NumberOfIdEntries;
     /*  IMAGE_RESOURCE_DIRECTORY_ENTRY DirectoryEntries[]; */
-} IMAGE_RESOURCE_DIRECTORY;
+} IMAGE_RESOURCE_DIRECTORY, *PIMAGE_RESOURCE_DIRECTORY;
 
 //
 // Each directory contains the 32-bit Name of the entry and an offset,
@@ -732,7 +731,7 @@ typedef struct _IMAGE_RESOURCE_DIRECTORY_ENTRY {
             ULONG   DataIsDirectory:1;
         };
     };
-} IMAGE_RESOURCE_DIRECTORY_ENTRY;
+} IMAGE_RESOURCE_DIRECTORY_ENTRY, *PIMAGE_RESOURCE_DIRECTORY_ENTRY;
 
 //
 // For resource directory entries that have actual string names, the Name
@@ -746,12 +745,12 @@ typedef struct _IMAGE_RESOURCE_DIRECTORY_ENTRY {
 typedef struct _IMAGE_RESOURCE_DIRECTORY_STRING {
     USHORT      Length;
     CHAR        NameString[Length];
-} IMAGE_RESOURCE_DIRECTORY_STRING;
+} IMAGE_RESOURCE_DIRECTORY_STRING, *PIMAGE_RESOURCE_DIRECTORY_STRING;
 
 typedef struct _IMAGE_RESOURCE_DIR_STRING_U {
     USHORT      Length;
     WCHAR       NameString[Length];
-} IMAGE_RESOURCE_DIR_STRING_U;
+} IMAGE_RESOURCE_DIR_STRING_U, *PIMAGE_RESOURCE_DIR_STRING_U;
 
 //
 // Each resource data entry describes a leaf node in the resource directory
@@ -767,7 +766,7 @@ typedef struct _IMAGE_RESOURCE_DATA_ENTRY {
     ULONG       Size;
     ULONG       CodePage;
     ULONG       Reserved;
-} IMAGE_RESOURCE_DATA_ENTRY;
+} IMAGE_RESOURCE_DATA_ENTRY, *PIMAGE_RESOURCE_DATA_ENTRY;
 
 typedef struct _VS_FIXEDFILEINFO {
     DWORD       dwSignature;
@@ -783,7 +782,7 @@ typedef struct _VS_FIXEDFILEINFO {
     DWORD       dwFileSubtype;
     DWORD       dwFileDateMS;
     DWORD       dwFileDateLS;
-} VS_FIXEDFILEINFO;
+} VS_FIXEDFILEINFO, *PVS_FIXEDFILEINFO;
 
 flag VS_FF {
     DEBUG                       = 0x00000001,   // The file contains debugging information or is compiled with debugging features enabled.
@@ -1190,7 +1189,7 @@ typedef struct _IMAGE_LOAD_CONFIG_CODE_INTEGRITY {
     USHORT      Catalog;                        // 0xFFFF means not available
     ULONG       CatalogOffset;
     ULONG       Reserved;                       // Additional bitmask to be defined later
-} IMAGE_LOAD_CONFIG_CODE_INTEGRITY;
+} IMAGE_LOAD_CONFIG_CODE_INTEGRITY, *PIMAGE_LOAD_CONFIG_CODE_INTEGRITY;
 
 //
 // Dynamic value relocation table in loadconfig
@@ -1200,7 +1199,7 @@ typedef struct _IMAGE_DYNAMIC_RELOCATION_TABLE {
     ULONG       Version;
     ULONG       Size;
 //  IMAGE_DYNAMIC_RELOCATION    DynamicRelocations[0];
-} IMAGE_DYNAMIC_RELOCATION_TABLE;
+} IMAGE_DYNAMIC_RELOCATION_TABLE, *PIMAGE_DYNAMIC_RELOCATION_TABLE;
 
 //
 // Dynamic value relocation entries following IMAGE_DYNAMIC_RELOCATION_TABLE
@@ -1210,13 +1209,13 @@ typedef struct _IMAGE_DYNAMIC_RELOCATION32 {
     ULONG       Symbol;
     ULONG       BaseRelocSize;
 //  IMAGE_BASE_RELOCATION       BaseRelocations[0];
-} IMAGE_DYNAMIC_RELOCATION32;
+} IMAGE_DYNAMIC_RELOCATION32, *PIMAGE_DYNAMIC_RELOCATION32;
 
 typedef struct _IMAGE_DYNAMIC_RELOCATION64 {
     ULONGLONG   Symbol;
     ULONG       BaseRelocSize;
 //  IMAGE_BASE_RELOCATION       BaseRelocations[0];
-} IMAGE_DYNAMIC_RELOCATION64;
+} IMAGE_DYNAMIC_RELOCATION64, *PIMAGE_DYNAMIC_RELOCATION64;
 
 typedef struct _IMAGE_DYNAMIC_RELOCATION32_V2 {
     ULONG       HeaderSize;
@@ -1226,7 +1225,7 @@ typedef struct _IMAGE_DYNAMIC_RELOCATION32_V2 {
     ULONG       Flags;
     // ...      variable length header fields
     // UCHAR       FixupInfo[FixupInfoSize];
-} IMAGE_DYNAMIC_RELOCATION32_V2;
+} IMAGE_DYNAMIC_RELOCATION32_V2, *PIMAGE_DYNAMIC_RELOCATION32_V2;
 
 typedef struct _IMAGE_DYNAMIC_RELOCATION64_V2 {
     ULONG       HeaderSize;
@@ -1236,7 +1235,7 @@ typedef struct _IMAGE_DYNAMIC_RELOCATION64_V2 {
     ULONG       Flags;
     // ...      variable length header fields
     // UCHAR    FixupInfo[FixupInfoSize]
-} IMAGE_DYNAMIC_RELOCATION64_V2;
+} IMAGE_DYNAMIC_RELOCATION64_V2, *PIMAGE_DYNAMIC_RELOCATION64_V2;
 
 //
 // Defined symbolic dynamic relocation entries.
@@ -1256,7 +1255,7 @@ typedef struct _IMAGE_DYNAMIC_RELOCATION64_V2 {
 typedef struct _IMAGE_PROLOGUE_DYNAMIC_RELOCATION_HEADER {
     UCHAR       PrologueByteCount;
     // UCHAR    PrologueBytes[PrologueByteCount];
-} IMAGE_PROLOGUE_DYNAMIC_RELOCATION_HEADER;
+} IMAGE_PROLOGUE_DYNAMIC_RELOCATION_HEADER, *PIMAGE_PROLOGUE_DYNAMIC_RELOCATION_HEADER;
 
 typedef struct _IMAGE_EPILOGUE_DYNAMIC_RELOCATION_HEADER {
     ULONG       EpilogueCount;
@@ -1265,13 +1264,13 @@ typedef struct _IMAGE_EPILOGUE_DYNAMIC_RELOCATION_HEADER {
     USHORT      BranchDescriptorCount;
     // UCHAR    BranchDescriptors[...];
     // UCHAR    BranchDescriptorBitMap[...];
-} IMAGE_EPILOGUE_DYNAMIC_RELOCATION_HEADER;
+} IMAGE_EPILOGUE_DYNAMIC_RELOCATION_HEADER, *PIMAGE_EPILOGUE_DYNAMIC_RELOCATION_HEADER;
 
 typedef struct _IMAGE_IMPORT_CONTROL_TRANSFER_DYNAMIC_RELOCATION {
     ULONG       PageRelativeOffset : 12;
     ULONG       IndirectCall       : 1;
     ULONG       IATIndex           : 19;
-} IMAGE_IMPORT_CONTROL_TRANSFER_DYNAMIC_RELOCATION;
+} IMAGE_IMPORT_CONTROL_TRANSFER_DYNAMIC_RELOCATION, *PIMAGE_IMPORT_CONTROL_TRANSFER_DYNAMIC_RELOCATION;
 
 //
 // On ARM64, an optimized imported function uses the following data structure
@@ -1285,7 +1284,7 @@ typedef struct _IMAGE_IMPORT_CONTROL_TRANSFER_ARM64_RELOCATION {
     ULONG       ImportType         :  1;                    // 0 if this refers to a static import, 1 for delayload import
     ULONG       IATIndex           : 15;                    // IAT index of the corresponding import.
                                                             // 0x7FFF is a special value indicating no index.
-} IMAGE_IMPORT_CONTROL_TRANSFER_ARM64_RELOCATION;
+} IMAGE_IMPORT_CONTROL_TRANSFER_ARM64_RELOCATION, *PIMAGE_IMPORT_CONTROL_TRANSFER_ARM64_RELOCATION;
 
 typedef struct _IMAGE_INDIR_CONTROL_TRANSFER_DYNAMIC_RELOCATION {
     USHORT      PageRelativeOffset : 12;
@@ -1293,18 +1292,18 @@ typedef struct _IMAGE_INDIR_CONTROL_TRANSFER_DYNAMIC_RELOCATION {
     USHORT      RexWPrefix         : 1;
     USHORT      CfgCheck           : 1;
     USHORT      Reserved           : 1;
-} IMAGE_INDIR_CONTROL_TRANSFER_DYNAMIC_RELOCATION;
+} IMAGE_INDIR_CONTROL_TRANSFER_DYNAMIC_RELOCATION, *PIMAGE_INDIR_CONTROL_TRANSFER_DYNAMIC_RELOCATION;
 
 typedef struct _IMAGE_SWITCHTABLE_BRANCH_DYNAMIC_RELOCATION {
     USHORT      PageRelativeOffset : 12;
     USHORT      RegisterNumber     : 4;
-} IMAGE_SWITCHTABLE_BRANCH_DYNAMIC_RELOCATION;
+} IMAGE_SWITCHTABLE_BRANCH_DYNAMIC_RELOCATION, *PIMAGE_SWITCHTABLE_BRANCH_DYNAMIC_RELOCATION;
 
 typedef struct _IMAGE_FUNCTION_OVERRIDE_HEADER {
     ULONG       FuncOverrideSize;
  // IMAGE_FUNCTION_OVERRIDE_DYNAMIC_RELOCATION  FuncOverrideInfo[ANYSIZE_ARRAY];    // FuncOverrideSize bytes in size
  // IMAGE_BDD_INFO BDDInfo;                                 // BDD region, size in bytes: DVRTEntrySize - sizeof(IMAGE_FUNCTION_OVERRIDE_HEADER) - FuncOverrideSize
-} IMAGE_FUNCTION_OVERRIDE_HEADER;
+} IMAGE_FUNCTION_OVERRIDE_HEADER, *PIMAGE_FUNCTION_OVERRIDE_HEADER;
 
 typedef struct _IMAGE_FUNCTION_OVERRIDE_DYNAMIC_RELOCATION {
     ULONG       OriginalRva;                                // RVA of original function
@@ -1317,19 +1316,19 @@ typedef struct _IMAGE_FUNCTION_OVERRIDE_DYNAMIC_RELOCATION {
 //  IMAGE_BASE_RELOCATION  BaseRelocs[ANYSIZE_ARRAY];       // Base relocations (RVA + Size + TO)
                                                             //  Padded with extra TOs for 4B alignment
                                                             // BaseRelocSize size in bytes
-} IMAGE_FUNCTION_OVERRIDE_DYNAMIC_RELOCATION;
+} IMAGE_FUNCTION_OVERRIDE_DYNAMIC_RELOCATION, *PIMAGE_FUNCTION_OVERRIDE_DYNAMIC_RELOCATION;
 
 typedef struct _IMAGE_BDD_INFO {
     ULONG       Version;                                    // decides the semantics of serialized BDD
     ULONG       BDDSize;
 //  IMAGE_BDD_DYNAMIC_RELOCATION BDDNodes[ANYSIZE_ARRAY];   // BDDSize size in bytes.
-} IMAGE_BDD_INFO;
+} IMAGE_BDD_INFO, *PIMAGE_BDD_INFO;
 
 typedef struct _IMAGE_BDD_DYNAMIC_RELOCATION {
     USHORT      Left;                                       // Index of FALSE edge in BDD array
     USHORT      Right;                                      // Index of TRUE edge in BDD array
     ULONG       Value;                                      // Either FeatureNumber or Index into RVAs array
-} IMAGE_BDD_DYNAMIC_RELOCATION;
+} IMAGE_BDD_DYNAMIC_RELOCATION, *PIMAGE_BDD_DYNAMIC_RELOCATION;
 
 // Function override relocation types in DVRT records.
 
@@ -1418,7 +1417,7 @@ typedef struct _IMAGE_LOAD_CONFIG_DIRECTORY32 {
     ULONG       CastGuardOsDeterminedFailureMode;           // VA
     ULONG       GuardMemcpyFunctionPointer;                 // VA
     ULONG       UmaFunctionPointers;                        // VA
-} IMAGE_LOAD_CONFIG_DIRECTORY32;
+} IMAGE_LOAD_CONFIG_DIRECTORY32, *PIMAGE_LOAD_CONFIG_DIRECTORY32;
 
 typedef struct _IMAGE_LOAD_CONFIG_DIRECTORY64 {
     ULONG       Size;
@@ -1471,7 +1470,7 @@ typedef struct _IMAGE_LOAD_CONFIG_DIRECTORY64 {
     ULONGLONG   CastGuardOsDeterminedFailureMode;           // VA
     ULONGLONG   GuardMemcpyFunctionPointer;                 // VA
     ULONGLONG   UmaFunctionPointers;                        // VA
-} IMAGE_LOAD_CONFIG_DIRECTORY64;
+} IMAGE_LOAD_CONFIG_DIRECTORY64, *PIMAGE_LOAD_CONFIG_DIRECTORY64;
 
 typedef struct _IMAGE_CHPE_METADATA_X86 {
     ULONG       Version;
@@ -1486,7 +1485,7 @@ typedef struct _IMAGE_CHPE_METADATA_X86 {
     ULONG       WowA64DispatchJumpFunctionPointer;
     ULONG       CompilerIATPointer;                         // Present if Version >= 2
     ULONG       WowA64RdtscFunctionPointer;                 // Present if Version >= 3
-} IMAGE_CHPE_METADATA_X86;
+} IMAGE_CHPE_METADATA_X86, *PIMAGE_CHPE_METADATA_X86;
 
 typedef struct _IMAGE_CHPE_RANGE_ENTRY {
     union {
@@ -1497,7 +1496,7 @@ typedef struct _IMAGE_CHPE_RANGE_ENTRY {
         };
     };
     ULONG Length;
-} IMAGE_CHPE_RANGE_ENTRY;
+} IMAGE_CHPE_RANGE_ENTRY, *PIMAGE_CHPE_RANGE_ENTRY;
 
 typedef struct _IMAGE_ARM64EC_METADATA {
     ULONG       Version;
@@ -1520,7 +1519,7 @@ typedef struct _IMAGE_ARM64EC_METADATA {
     ULONG       ExtraRFETableSize;
     ULONG       __os_arm64x_dispatch_fptr;
     ULONG       AuxiliaryIATCopy;
-} IMAGE_ARM64EC_METADATA;
+} IMAGE_ARM64EC_METADATA, *PIMAGE_ARM64EC_METADATA;
 
 typedef struct _IMAGE_ARM64EC_METADATA_V2 {
     ULONG       Version;
@@ -1550,18 +1549,18 @@ typedef struct _IMAGE_ARM64EC_METADATA_V2 {
     ULONG       AuxDelayloadIAT;
     ULONG       AuxDelayloadIATCopy;
     ULONG       ReservedBitField;                           // reserved and unused by the linker
-} IMAGE_ARM64EC_METADATA_V2;
+} IMAGE_ARM64EC_METADATA_V2, *PIMAGE_ARM64EC_METADATA_V2;
 
 typedef struct _IMAGE_ARM64EC_REDIRECTION_ENTRY {
     ULONG       Source;
     ULONG       Destination;
-} IMAGE_ARM64EC_REDIRECTION_ENTRY;
+} IMAGE_ARM64EC_REDIRECTION_ENTRY, *PIMAGE_ARM64EC_REDIRECTION_ENTRY;
 
 typedef struct _IMAGE_ARM64EC_CODE_RANGE_ENTRY_POINT {
     ULONG       StartRva;
     ULONG       EndRva;
     ULONG       EntryPoint;
-} IMAGE_ARM64EC_CODE_RANGE_ENTRY_POINT;
+} IMAGE_ARM64EC_CODE_RANGE_ENTRY_POINT, *PIMAGE_ARM64EC_CODE_RANGE_ENTRY_POINT;
 
 #define IMAGE_DVRT_ARM64X_FIXUP_TYPE_ZEROFILL   0
 #define IMAGE_DVRT_ARM64X_FIXUP_TYPE_VALUE      1
@@ -1575,14 +1574,14 @@ typedef struct _IMAGE_DVRT_ARM64X_FIXUP_RECORD {
     USHORT      Offset  : 12;
     USHORT      Type    :  2;
     USHORT      Size    :  2;
-} IMAGE_DVRT_ARM64X_FIXUP_RECORD;
+} IMAGE_DVRT_ARM64X_FIXUP_RECORD, *PIMAGE_DVRT_ARM64X_FIXUP_RECORD;
 
 typedef struct _IMAGE_DVRT_ARM64X_DELTA_FIXUP_RECORD {
     USHORT      Offset  : 12;
     USHORT      Type    :  2;
     USHORT      Sign    :  1;
     USHORT      Scale   :  1;
-} IMAGE_DVRT_ARM64X_DELTA_FIXUP_RECORD;
+} IMAGE_DVRT_ARM64X_DELTA_FIXUP_RECORD, *PIMAGE_DVRT_ARM64X_DELTA_FIXUP_RECORD;
 
 typedef struct _IMAGE_HOT_PATCH_INFO {
     ULONG       Version;
@@ -1594,7 +1593,7 @@ typedef struct _IMAGE_HOT_PATCH_INFO {
     ULONG       ExtraPatchSize;                             // Version 3 and later
     ULONG       MinSequenceNumber;                          // Version 4 and later
     ULONG       Flags;                                      // Version 4 and later
-} IMAGE_HOT_PATCH_INFO;
+} IMAGE_HOT_PATCH_INFO, *PIMAGE_HOT_PATCH_INFO;
 
 typedef struct _IMAGE_HOT_PATCH_BASE {
     ULONG       SequenceNumber;
@@ -1605,7 +1604,7 @@ typedef struct _IMAGE_HOT_PATCH_BASE {
     ULONG       CodeIntegritySize;
     ULONG       PatchTable;
     ULONG       BufferOffset;                               // V2 and later
-} IMAGE_HOT_PATCH_BASE;
+} IMAGE_HOT_PATCH_BASE, *PIMAGE_HOT_PATCH_BASE;
 
 typedef struct _IMAGE_HOT_PATCH_MACHINE {
     struct {
@@ -1614,12 +1613,12 @@ typedef struct _IMAGE_HOT_PATCH_MACHINE {
         ULONG   Arm64    :  1;
         ULONG   Amd64EC  :  1;
     };
-} IMAGE_HOT_PATCH_MACHINE;
+} IMAGE_HOT_PATCH_MACHINE, *PIMAGE_HOT_PATCH_MACHINE;
 
 typedef struct _IMAGE_HOT_PATCH_HASHES {
     UCHAR       SHA256[32];
     UCHAR       SHA1[20];
-} IMAGE_HOT_PATCH_HASHES;
+} IMAGE_HOT_PATCH_HASHES, *PIMAGE_HOT_PATCH_HASHES;
 
 #define IMAGE_HOT_PATCH_BASE_OBLIGATORY         0x00000001
 #define IMAGE_HOT_PATCH_BASE_CAN_ROLL_BACK      0x00000002
@@ -1671,7 +1670,7 @@ typedef struct _IMAGE_CE_RUNTIME_FUNCTION_ENTRY {
     ULONG       FuncLen : 22;
     ULONG       ThirtyTwoBit : 1;
     ULONG       ExceptionFlag : 1;
-} IMAGE_CE_RUNTIME_FUNCTION_ENTRY;
+} IMAGE_CE_RUNTIME_FUNCTION_ENTRY, *PIMAGE_CE_RUNTIME_FUNCTION_ENTRY;
 
 typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
     ULONG       BeginAddress;
@@ -1689,7 +1688,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
             ULONG   StackAdjust : 10;
         };
     };
-} IMAGE_ARM_RUNTIME_FUNCTION_ENTRY;
+} IMAGE_ARM_RUNTIME_FUNCTION_ENTRY, *PIMAGE_ARM_RUNTIME_FUNCTION_ENTRY;
 
 enum ARM64_FNPDATA_FLAGS {
     PdataRefToFullXdata         = 0,
@@ -1718,7 +1717,7 @@ typedef struct _IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY {
             ULONG   FrameSize : 9;
         };
     };
-} IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY;
+} IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY, *PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY;
 
 typedef union _IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA {
     ULONG       HeaderData;
@@ -1730,7 +1729,7 @@ typedef union _IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA {
         ULONG       EpilogCount : 5;            // number of epilogs or byte index of the first unwind code for the one only epilog
         ULONG       CodeWords : 5;              // number of dwords with unwind codes
     };
-} IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA;
+} IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA, *PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA;
 
 typedef union IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EXTENDED {
     ULONG       ExtendedHeaderData;
@@ -1738,7 +1737,7 @@ typedef union IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EXTENDED {
         ULONG       ExtendedEpilogCount : 16;
         ULONG       ExtendedCodeWords : 8;
     };
-} IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EXTENDED;
+} IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EXTENDED, *PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EXTENDED;
 
 typedef union IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EPILOG_SCOPE {
     ULONG       EpilogScopeData;
@@ -1747,7 +1746,7 @@ typedef union IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EPILOG_SCOPE {
         ULONG       Res0: 4;
         ULONG       EpilogStartIndex : 10;      // byte index of the first unwind code that describes this epilog.
     };
-} IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EPILOG_SCOPE;
+} IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EPILOG_SCOPE, *PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EPILOG_SCOPE;
 
 typedef struct _IMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY {
     ULONGLONG   BeginAddress;
@@ -1755,7 +1754,7 @@ typedef struct _IMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY {
     ULONGLONG   ExceptionHandler;
     ULONGLONG   HandlerData;
     ULONGLONG   PrologEndAddress;
-} IMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY;
+} IMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY, *PIMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY;
 
 typedef struct _IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY {
     ULONG       BeginAddress;
@@ -1763,7 +1762,7 @@ typedef struct _IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY {
     ULONG       ExceptionHandler;
     ULONG       HandlerData;
     ULONG       PrologEndAddress;
-} IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY;
+} IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY, *PIMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY;
 
 typedef struct _IMAGE_MIPS_RUNTIME_FUNCTION_ENTRY {
     ULONG       BeginAddress;
@@ -1771,7 +1770,7 @@ typedef struct _IMAGE_MIPS_RUNTIME_FUNCTION_ENTRY {
     ULONG       ExceptionHandler;
     ULONG       HandlerData;
     ULONG       PrologEndAddress;
-} IMAGE_MIPS_RUNTIME_FUNCTION_ENTRY;
+} IMAGE_MIPS_RUNTIME_FUNCTION_ENTRY, *PIMAGE_MIPS_RUNTIME_FUNCTION_ENTRY;
 
 typedef struct _IMAGE_RUNTIME_FUNCTION_ENTRY {
     ULONG       BeginAddress;
@@ -1780,7 +1779,7 @@ typedef struct _IMAGE_RUNTIME_FUNCTION_ENTRY {
         ULONG   UnwindInfoAddress;
         ULONG   UnwindData;
     };
-} IMAGE_RUNTIME_FUNCTION_ENTRY;
+} IMAGE_RUNTIME_FUNCTION_ENTRY, *PIMAGE_RUNTIME_FUNCTION_ENTRY;
 
 //
 // Sofware enclave information
@@ -1803,7 +1802,7 @@ typedef struct _IMAGE_ENCLAVE_CONFIG32 {
     ULONG       EnclaveSize;
     ULONG       NumberOfThreads;
     ULONG       EnclaveFlags;
-} IMAGE_ENCLAVE_CONFIG32;
+} IMAGE_ENCLAVE_CONFIG32, *PIMAGE_ENCLAVE_CONFIG32;
 
 typedef struct _IMAGE_ENCLAVE_CONFIG64 {
     ULONG       Size;
@@ -1819,7 +1818,7 @@ typedef struct _IMAGE_ENCLAVE_CONFIG64 {
     ULONGLONG   EnclaveSize;
     ULONG       NumberOfThreads;
     ULONG       EnclaveFlags;
-} IMAGE_ENCLAVE_CONFIG64;
+} IMAGE_ENCLAVE_CONFIG64, *PIMAGE_ENCLAVE_CONFIG64;
 
 #define IMAGE_ENCLAVE_POLICY_DEBUGGABLE         0x00000001
 #define IMAGE_ENCLAVE_POLICY_STRICT_MEMORY      0x00000002
@@ -1834,7 +1833,7 @@ typedef struct _IMAGE_ENCLAVE_IMPORT {
     UCHAR       ImageID[IMAGE_ENCLAVE_SHORT_ID_LENGTH];
     ULONG       ImportName;
     ULONG       Reserved;
-} IMAGE_ENCLAVE_IMPORT;
+} IMAGE_ENCLAVE_IMPORT, *PIMAGE_ENCLAVE_IMPORT;
 
 #define IMAGE_ENCLAVE_IMPORT_MATCH_NONE         0x00000000
 #define IMAGE_ENCLAVE_IMPORT_MATCH_UNIQUE_ID    0x00000001
@@ -1861,7 +1860,7 @@ typedef struct _WIN_CERTIFICATE {
     USHORT      wRevision;
     WIN_CERT_TYPE   wCertificateType;
     CHAR        bCertificate[dwLength - 8];
-} WIN_CERTIFICATE;
+} WIN_CERTIFICATE, *PWIN_CERTIFICATE;
 
 //
 // Debug Format
@@ -1913,7 +1912,7 @@ typedef struct _IMAGE_DEBUG_DIRECTORY {
     ULONG       SizeOfData;
     ULONG       AddressOfRawData;
     ULONG       PointerToRawData;
-} IMAGE_DEBUG_DIRECTORY;
+} IMAGE_DEBUG_DIRECTORY, *PIMAGE_DEBUG_DIRECTORY;
 
 typedef struct _IMAGE_COFF_SYMBOLS_HEADER {
     ULONG       NumberOfSymbols;
@@ -1924,7 +1923,7 @@ typedef struct _IMAGE_COFF_SYMBOLS_HEADER {
     ULONG       RvaToLastByteOfCode;
     ULONG       RvaToFirstByteOfData;
     ULONG       RvaToLastByteOfData;
-} IMAGE_COFF_SYMBOLS_HEADER;
+} IMAGE_COFF_SYMBOLS_HEADER, *PIMAGE_COFF_SYMBOLS_HEADER;
 
 #define CVINFO_PDB70_CVSIGNATURE                0x53445352  // "RSDS"
 #define CVINFO_PDB20_CVSIGNATURE                0x3031424e  // "NB10"
@@ -1935,27 +1934,27 @@ typedef struct _IMAGE_COFF_SYMBOLS_HEADER {
 typedef struct _CV_HEADER {
     ULONG       Signature;
     ULONG       Offset;
-} CV_HEADER;
+} CV_HEADER, *PCV_HEADER;
 
 typedef struct _CV_INFO_PDB20 {
     CV_HEADER   CvHeader;
     ULONG       Signature;
     ULONG       Age;
     CHAR        PdbFileName[];
-} CV_INFO_PDB20;
+} CV_INFO_PDB20, *PCV_INFO_PDB20;
 
 typedef struct _CV_INFO_PDB70 {
     ULONG       CvSignature;
     CHAR        Signature[16];
     ULONG       Age;
     CHAR        PdbFileName[];
-} CV_INFO_PDB70;
+} CV_INFO_PDB70, *PCV_INFO_PDB70;
 
 typedef struct _CV_INFO_MTOC {
   ULONG         CvSignature;
   BYTE          Signature[16];
   BYTE          PdbFileName[1];
-} CV_INFO_MTOC;
+} CV_INFO_MTOC, *PCV_INFO_MTOC;
 
 #define FRAME_FPO       0
 #define FRAME_TRAP      1
@@ -1973,7 +1972,7 @@ typedef struct _FPO_DATA {
     USHORT      fUseBP   : 1;                   // TRUE if EBP has been allocated
     USHORT      reserved : 1;                   // reserved for future use
     USHORT      cbFrame  : 2;                   // frame type
-} FPO_DATA;
+} FPO_DATA, *PFPO_DATA;
 
 #define IMAGE_DEBUG_MISC_EXENAME                1
 
@@ -1984,7 +1983,7 @@ typedef struct _IMAGE_DEBUG_MISC {
     BOOLEAN     Unicode;                        // TRUE if data is unicode string
     UCHAR       Reserved[ 3 ];
 //  UCHAR       Data[ 1 ];                      // Actual data
-} IMAGE_DEBUG_MISC;
+} IMAGE_DEBUG_MISC, *PIMAGE_DEBUG_MISC;
 
 #define IMAGE_DEBUG_POGO_SIGNATURE_ZERO         0x00000000
 #define IMAGE_DEBUG_POGO_SIGNATURE_LTCG         0x4C544347
@@ -1996,7 +1995,7 @@ typedef struct _VC_FEATURE {
     ULONG       Gs;
     ULONG       Sdl;
     ULONG       GuardN;
-} VC_FEATURE;
+} VC_FEATURE, *PVC_FEATURE;
 
 //
 // Function table extracted from MIPS/ALPHA/IA64 images.  Does not contain
@@ -2008,7 +2007,7 @@ typedef struct _IMAGE_FUNCTION_ENTRY {
     ULONG       StartingAddress;
     ULONG       EndingAddress;
     ULONG       EndOfPrologue;
-} IMAGE_FUNCTION_ENTRY;
+} IMAGE_FUNCTION_ENTRY, *PIMAGE_FUNCTION_ENTRY;
 
 typedef struct _IMAGE_FUNCTION_ENTRY64 {
     ULONGLONG   StartingAddress;
@@ -2017,7 +2016,7 @@ typedef struct _IMAGE_FUNCTION_ENTRY64 {
         ULONGLONG   EndOfPrologue;
         ULONGLONG   UnwindInfoAddress;
     };
-} IMAGE_FUNCTION_ENTRY64;
+} IMAGE_FUNCTION_ENTRY64, *PIMAGE_FUNCTION_ENTRY64;
 
 //
 // Debugging information can be stripped from an image file and placed
@@ -2053,7 +2052,7 @@ typedef struct _IMAGE_SEPARATE_DEBUG_HEADER {
     ULONG       DebugDirectorySize;
     ULONG       SectionAlignment;
     ULONG       Reserved[2];
-} IMAGE_SEPARATE_DEBUG_HEADER;
+} IMAGE_SEPARATE_DEBUG_HEADER, *PIMAGE_SEPARATE_DEBUG_HEADER;
 
 typedef struct _NON_PAGED_DEBUG_INFO {
     USHORT      Signature;
@@ -2067,7 +2066,7 @@ typedef struct _NON_PAGED_DEBUG_INFO {
     ULONGLONG   ImageBase;
     //DebugDirectorySize
     //IMAGE_DEBUG_DIRECTORY
-} NON_PAGED_DEBUG_INFO;
+} NON_PAGED_DEBUG_INFO, *PNON_PAGED_DEBUG_INFO;
 
 #define IMAGE_SEPARATE_DEBUG_SIGNATURE          0x4449      // DI
 #define NON_PAGED_DEBUG_SIGNATURE               0x4E49      // NI
@@ -2091,12 +2090,12 @@ typedef struct _ImageArchitectureHeader {
     unsigned int    AmaskShift: 8;              // Amask bit in question for this fixup
     int _:16;                                   // MBZ
     ULONG           FirstEntryRVA;              // RVA into .arch section to array of ARCHITECTURE_ENTRY's
-} IMAGE_ARCHITECTURE_HEADER;
+} IMAGE_ARCHITECTURE_HEADER, *PIMAGE_ARCHITECTURE_HEADER;
 
 typedef struct _ImageArchitectureEntry {
     ULONG       FixupInstRVA;                   // RVA of instruction to fixup
     ULONG       NewInst;                        // fixup instruction (see alphaops.h)
-} IMAGE_ARCHITECTURE_ENTRY;
+} IMAGE_ARCHITECTURE_ENTRY, *PIMAGE_ARCHITECTURE_ENTRY;
 
 // The following structure defines the new import object.  Note the values of the first two fields,
 // which must be set as stated in order to differentiate old and new import members.
@@ -2136,7 +2135,7 @@ typedef struct IMPORT_OBJECT_HEADER {
     IMPORT_OBJECT_TYPE  Type : 2;               // IMPORT_TYPE
     IMPORT_OBJECT_NAME_TYPE NameType : 3;       // IMPORT_NAME_TYPE
     USHORT      Reserved : 11;                  // Reserved. Must be zero.
-} IMPORT_OBJECT_HEADER;
+} IMPORT_OBJECT_HEADER, *PIMPORT_OBJECT_HEADER;
 
 //
 // COM Format.
@@ -2212,7 +2211,7 @@ typedef struct _IMAGE_COR20_HEADER {
 
     // Precompiled image info (internal use only - set to zero)
     IMAGE_DATA_DIRECTORY    ManagedNativeHeader;
-} IMAGE_COR20_HEADER;
+} IMAGE_COR20_HEADER, *PIMAGE_COR20_HEADER;
 
 typedef struct _IMAGE_COR20_METADATA {
     ULONG       Magic;
@@ -2223,13 +2222,13 @@ typedef struct _IMAGE_COR20_METADATA {
     CHAR        Version[Length];
     USHORT      Flags;
     USHORT      NumberOfStreams;
-} IMAGE_COR20_METADATA;
+} IMAGE_COR20_METADATA, *PIMAGE_COR20_METADATA;
 
 typedef struct _IMAGE_COR20_STREAM_HEADER {
     ULONG       Offset;
     ULONG       Size;
     CHAR        Name[];
-} IMAGE_COR20_STREAM_HEADER;
+} IMAGE_COR20_STREAM_HEADER, *PIMAGE_COR20_STREAM_HEADER;
 """  # noqa: E501
 
 c_pe = cstruct().load(c_pe_def)

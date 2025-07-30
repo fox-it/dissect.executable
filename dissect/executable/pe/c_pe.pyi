@@ -157,6 +157,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_DOS_HEADER: TypeAlias = _IMAGE_DOS_HEADER
+    PIMAGE_DOS_HEADER: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_DOS_HEADER]
     class _IMAGE_OS2_HEADER(__cs__.Structure):
         ne_magic: _c_pe.uint16
         ne_ver: _c_pe.char
@@ -226,6 +227,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_OS2_HEADER: TypeAlias = _IMAGE_OS2_HEADER
+    PIMAGE_OS2_HEADER: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_OS2_HEADER]
     class _IMAGE_VXD_HEADER(__cs__.Structure):
         e32_magic: _c_pe.uint16
         e32_border: _c_pe.uint8
@@ -337,6 +339,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_VXD_HEADER: TypeAlias = _IMAGE_VXD_HEADER
+    PIMAGE_VXD_HEADER: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_VXD_HEADER]
     class IMAGE_FILE(__cs__.Flag):
         RELOCS_STRIPPED = ...
         EXECUTABLE_IMAGE = ...
@@ -415,6 +418,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_FILE_HEADER: TypeAlias = _IMAGE_FILE_HEADER
+    PIMAGE_FILE_HEADER: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_FILE_HEADER]
     class _IMAGE_DATA_DIRECTORY(__cs__.Structure):
         VirtualAddress: _c_pe.uint32
         Size: _c_pe.uint32
@@ -424,6 +428,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_DATA_DIRECTORY: TypeAlias = _IMAGE_DATA_DIRECTORY
+    PIMAGE_DATA_DIRECTORY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_DATA_DIRECTORY]
     class IMAGE_SUBSYSTEM(__cs__.Enum):
         UNKNOWN = ...
         NATIVE = ...
@@ -537,6 +542,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_OPTIONAL_HEADER32: TypeAlias = _IMAGE_OPTIONAL_HEADER
+    PIMAGE_OPTIONAL_HEADER32: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_OPTIONAL_HEADER]
     class _IMAGE_OPTIONAL_HEADER64(__cs__.Structure):
         Magic: _c_pe.uint16
         MajorLinkerVersion: _c_pe.uint8
@@ -614,6 +620,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_OPTIONAL_HEADER64: TypeAlias = _IMAGE_OPTIONAL_HEADER64
+    PIMAGE_OPTIONAL_HEADER64: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_OPTIONAL_HEADER64]
     class _IMAGE_NT_HEADERS64(__cs__.Structure):
         Signature: _c_pe.uint32
         FileHeader: _c_pe._IMAGE_FILE_HEADER
@@ -629,6 +636,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_NT_HEADERS64: TypeAlias = _IMAGE_NT_HEADERS64
+    PIMAGE_NT_HEADERS64: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_NT_HEADERS64]
     class _IMAGE_NT_HEADERS(__cs__.Structure):
         Signature: _c_pe.uint32
         FileHeader: _c_pe._IMAGE_FILE_HEADER
@@ -644,6 +652,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_NT_HEADERS32: TypeAlias = _IMAGE_NT_HEADERS
+    PIMAGE_NT_HEADERS32: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_NT_HEADERS]
     class IMAGE_DIRECTORY_ENTRY(__cs__.Enum):
         EXPORT = ...
         IMPORT = ...
@@ -745,6 +754,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_SECTION_HEADER: TypeAlias = _IMAGE_SECTION_HEADER
+    PIMAGE_SECTION_HEADER: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_SECTION_HEADER]
     class IMAGE_REL_BASED(__cs__.Enum):
         ABSOLUTE = ...
         HIGH = ...
@@ -779,6 +789,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_BASE_RELOCATION: TypeAlias = _IMAGE_BASE_RELOCATION
+    PIMAGE_BASE_RELOCATION: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_BASE_RELOCATION]
     class _IMAGE_ARCHIVE_MEMBER_HEADER(__cs__.Structure):
         Name: __cs__.CharArray
         Date: __cs__.CharArray
@@ -802,6 +813,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ARCHIVE_MEMBER_HEADER: TypeAlias = _IMAGE_ARCHIVE_MEMBER_HEADER
+    PIMAGE_ARCHIVE_MEMBER_HEADER: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_ARCHIVE_MEMBER_HEADER]
     class _IMAGE_EXPORT_DIRECTORY(__cs__.Structure):
         Characteristics: _c_pe.uint32
         TimeDateStamp: _c_pe.uint32
@@ -833,6 +845,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_EXPORT_DIRECTORY: TypeAlias = _IMAGE_EXPORT_DIRECTORY
+    PIMAGE_EXPORT_DIRECTORY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_EXPORT_DIRECTORY]
     class _IMAGE_IMPORT_BY_NAME(__cs__.Structure):
         Hint: _c_pe.uint16
         Name: __cs__.CharArray
@@ -842,6 +855,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_IMPORT_BY_NAME: TypeAlias = _IMAGE_IMPORT_BY_NAME
+    PIMAGE_IMPORT_BY_NAME: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_IMPORT_BY_NAME]
     class _IMAGE_THUNK_DATA64(__cs__.Structure):
         class __anonymous_1__(__cs__.Union):
             ForwarderString: _c_pe.uint64
@@ -866,6 +880,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_THUNK_DATA64: TypeAlias = _IMAGE_THUNK_DATA64
+    PIMAGE_THUNK_DATA64: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_THUNK_DATA64]
     class _IMAGE_THUNK_DATA32(__cs__.Structure):
         class __anonymous_2__(__cs__.Union):
             ForwarderString: _c_pe.uint32
@@ -890,6 +905,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_THUNK_DATA32: TypeAlias = _IMAGE_THUNK_DATA32
+    PIMAGE_THUNK_DATA32: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_THUNK_DATA32]
     class _IMAGE_IMPORT_DESCRIPTOR(__cs__.Structure):
         Characteristics: _c_pe.uint32
         OriginalFirstThunk: _c_pe.uint32
@@ -911,6 +927,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_IMPORT_DESCRIPTOR: TypeAlias = _IMAGE_IMPORT_DESCRIPTOR
+    PIMAGE_IMPORT_DESCRIPTOR: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_IMPORT_DESCRIPTOR]
     class _IMAGE_TLS_DIRECTORY64(__cs__.Structure):
         StartAddressOfRawData: _c_pe.uint64
         EndAddressOfRawData: _c_pe.uint64
@@ -938,6 +955,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_TLS_DIRECTORY64: TypeAlias = _IMAGE_TLS_DIRECTORY64
+    PIMAGE_TLS_DIRECTORY64: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_TLS_DIRECTORY64]
     class _IMAGE_TLS_DIRECTORY32(__cs__.Structure):
         StartAddressOfRawData: _c_pe.uint32
         EndAddressOfRawData: _c_pe.uint32
@@ -965,6 +983,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_TLS_DIRECTORY32: TypeAlias = _IMAGE_TLS_DIRECTORY32
+    PIMAGE_TLS_DIRECTORY32: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_TLS_DIRECTORY32]
     class _IMAGE_BOUND_IMPORT_DESCRIPTOR(__cs__.Structure):
         TimeDateStamp: _c_pe.uint32
         OffsetModuleName: _c_pe.uint16
@@ -980,6 +999,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_BOUND_IMPORT_DESCRIPTOR: TypeAlias = _IMAGE_BOUND_IMPORT_DESCRIPTOR
+    PIMAGE_BOUND_IMPORT_DESCRIPTOR: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_BOUND_IMPORT_DESCRIPTOR]
     class _IMAGE_BOUND_FORWARDER_REF(__cs__.Structure):
         TimeDateStamp: _c_pe.uint32
         OffsetModuleName: _c_pe.uint16
@@ -995,6 +1015,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_BOUND_FORWARDER_REF: TypeAlias = _IMAGE_BOUND_FORWARDER_REF
+    PIMAGE_BOUND_FORWARDER_REF: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_BOUND_FORWARDER_REF]
     class _IMAGE_DELAYLOAD_DESCRIPTOR(__cs__.Structure):
         class __anonymous_9__(__cs__.Union):
             AllAttributes: _c_pe.uint32
@@ -1034,6 +1055,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_DELAYLOAD_DESCRIPTOR: TypeAlias = _IMAGE_DELAYLOAD_DESCRIPTOR
+    PIMAGE_DELAYLOAD_DESCRIPTOR: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_DELAYLOAD_DESCRIPTOR]
     class RT(__cs__.Enum):
         CURSOR = ...
         BITMAP = ...
@@ -1078,6 +1100,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_RESOURCE_DIRECTORY: TypeAlias = _IMAGE_RESOURCE_DIRECTORY
+    PIMAGE_RESOURCE_DIRECTORY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_RESOURCE_DIRECTORY]
     class _IMAGE_RESOURCE_DIRECTORY_ENTRY(__cs__.Structure):
         NameOffset: _c_pe.uint32
         NameIsString: _c_pe.uint32
@@ -1101,6 +1124,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_RESOURCE_DIRECTORY_ENTRY: TypeAlias = _IMAGE_RESOURCE_DIRECTORY_ENTRY
+    PIMAGE_RESOURCE_DIRECTORY_ENTRY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_RESOURCE_DIRECTORY_ENTRY]
     class _IMAGE_RESOURCE_DIRECTORY_STRING(__cs__.Structure):
         Length: _c_pe.uint16
         NameString: __cs__.CharArray
@@ -1110,6 +1134,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_RESOURCE_DIRECTORY_STRING: TypeAlias = _IMAGE_RESOURCE_DIRECTORY_STRING
+    PIMAGE_RESOURCE_DIRECTORY_STRING: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_RESOURCE_DIRECTORY_STRING]
     class _IMAGE_RESOURCE_DIR_STRING_U(__cs__.Structure):
         Length: _c_pe.uint16
         NameString: __cs__.WcharArray
@@ -1119,6 +1144,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_RESOURCE_DIR_STRING_U: TypeAlias = _IMAGE_RESOURCE_DIR_STRING_U
+    PIMAGE_RESOURCE_DIR_STRING_U: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_RESOURCE_DIR_STRING_U]
     class _IMAGE_RESOURCE_DATA_ENTRY(__cs__.Structure):
         OffsetToData: _c_pe.uint32
         Size: _c_pe.uint32
@@ -1136,6 +1162,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_RESOURCE_DATA_ENTRY: TypeAlias = _IMAGE_RESOURCE_DATA_ENTRY
+    PIMAGE_RESOURCE_DATA_ENTRY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_RESOURCE_DATA_ENTRY]
     class _VS_FIXEDFILEINFO(__cs__.Structure):
         dwSignature: _c_pe.uint32
         dwStrucVersion: _c_pe.uint32
@@ -1171,6 +1198,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     VS_FIXEDFILEINFO: TypeAlias = _VS_FIXEDFILEINFO
+    PVS_FIXEDFILEINFO: TypeAlias = __cs__.Pointer[_c_pe._VS_FIXEDFILEINFO]
     class VS_FF(__cs__.Flag):
         DEBUG = ...
         PRERELEASE = ...
@@ -1477,6 +1505,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_LOAD_CONFIG_CODE_INTEGRITY: TypeAlias = _IMAGE_LOAD_CONFIG_CODE_INTEGRITY
+    PIMAGE_LOAD_CONFIG_CODE_INTEGRITY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_LOAD_CONFIG_CODE_INTEGRITY]
     class _IMAGE_DYNAMIC_RELOCATION_TABLE(__cs__.Structure):
         Version: _c_pe.uint32
         Size: _c_pe.uint32
@@ -1486,6 +1515,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_DYNAMIC_RELOCATION_TABLE: TypeAlias = _IMAGE_DYNAMIC_RELOCATION_TABLE
+    PIMAGE_DYNAMIC_RELOCATION_TABLE: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_DYNAMIC_RELOCATION_TABLE]
     class _IMAGE_DYNAMIC_RELOCATION32(__cs__.Structure):
         Symbol: _c_pe.uint32
         BaseRelocSize: _c_pe.uint32
@@ -1495,6 +1525,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_DYNAMIC_RELOCATION32: TypeAlias = _IMAGE_DYNAMIC_RELOCATION32
+    PIMAGE_DYNAMIC_RELOCATION32: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_DYNAMIC_RELOCATION32]
     class _IMAGE_DYNAMIC_RELOCATION64(__cs__.Structure):
         Symbol: _c_pe.uint64
         BaseRelocSize: _c_pe.uint32
@@ -1504,6 +1535,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_DYNAMIC_RELOCATION64: TypeAlias = _IMAGE_DYNAMIC_RELOCATION64
+    PIMAGE_DYNAMIC_RELOCATION64: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_DYNAMIC_RELOCATION64]
     class _IMAGE_DYNAMIC_RELOCATION32_V2(__cs__.Structure):
         HeaderSize: _c_pe.uint32
         FixupInfoSize: _c_pe.uint32
@@ -1523,6 +1555,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_DYNAMIC_RELOCATION32_V2: TypeAlias = _IMAGE_DYNAMIC_RELOCATION32_V2
+    PIMAGE_DYNAMIC_RELOCATION32_V2: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_DYNAMIC_RELOCATION32_V2]
     class _IMAGE_DYNAMIC_RELOCATION64_V2(__cs__.Structure):
         HeaderSize: _c_pe.uint32
         FixupInfoSize: _c_pe.uint32
@@ -1542,6 +1575,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_DYNAMIC_RELOCATION64_V2: TypeAlias = _IMAGE_DYNAMIC_RELOCATION64_V2
+    PIMAGE_DYNAMIC_RELOCATION64_V2: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_DYNAMIC_RELOCATION64_V2]
     class _IMAGE_PROLOGUE_DYNAMIC_RELOCATION_HEADER(__cs__.Structure):
         PrologueByteCount: _c_pe.uint8
         @overload
@@ -1550,6 +1584,9 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_PROLOGUE_DYNAMIC_RELOCATION_HEADER: TypeAlias = _IMAGE_PROLOGUE_DYNAMIC_RELOCATION_HEADER
+    PIMAGE_PROLOGUE_DYNAMIC_RELOCATION_HEADER: TypeAlias = __cs__.Pointer[
+        _c_pe._IMAGE_PROLOGUE_DYNAMIC_RELOCATION_HEADER
+    ]
     class _IMAGE_EPILOGUE_DYNAMIC_RELOCATION_HEADER(__cs__.Structure):
         EpilogueCount: _c_pe.uint32
         EpilogueByteCount: _c_pe.uint8
@@ -1567,6 +1604,9 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_EPILOGUE_DYNAMIC_RELOCATION_HEADER: TypeAlias = _IMAGE_EPILOGUE_DYNAMIC_RELOCATION_HEADER
+    PIMAGE_EPILOGUE_DYNAMIC_RELOCATION_HEADER: TypeAlias = __cs__.Pointer[
+        _c_pe._IMAGE_EPILOGUE_DYNAMIC_RELOCATION_HEADER
+    ]
     class _IMAGE_IMPORT_CONTROL_TRANSFER_DYNAMIC_RELOCATION(__cs__.Structure):
         PageRelativeOffset: _c_pe.uint32
         IndirectCall: _c_pe.uint32
@@ -1582,6 +1622,9 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_IMPORT_CONTROL_TRANSFER_DYNAMIC_RELOCATION: TypeAlias = _IMAGE_IMPORT_CONTROL_TRANSFER_DYNAMIC_RELOCATION
+    PIMAGE_IMPORT_CONTROL_TRANSFER_DYNAMIC_RELOCATION: TypeAlias = __cs__.Pointer[
+        _c_pe._IMAGE_IMPORT_CONTROL_TRANSFER_DYNAMIC_RELOCATION
+    ]
     class _IMAGE_IMPORT_CONTROL_TRANSFER_ARM64_RELOCATION(__cs__.Structure):
         PageRelativeOffset: _c_pe.uint32
         IndirectCall: _c_pe.uint32
@@ -1601,6 +1644,9 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_IMPORT_CONTROL_TRANSFER_ARM64_RELOCATION: TypeAlias = _IMAGE_IMPORT_CONTROL_TRANSFER_ARM64_RELOCATION
+    PIMAGE_IMPORT_CONTROL_TRANSFER_ARM64_RELOCATION: TypeAlias = __cs__.Pointer[
+        _c_pe._IMAGE_IMPORT_CONTROL_TRANSFER_ARM64_RELOCATION
+    ]
     class _IMAGE_INDIR_CONTROL_TRANSFER_DYNAMIC_RELOCATION(__cs__.Structure):
         PageRelativeOffset: _c_pe.uint16
         IndirectCall: _c_pe.uint16
@@ -1620,6 +1666,9 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_INDIR_CONTROL_TRANSFER_DYNAMIC_RELOCATION: TypeAlias = _IMAGE_INDIR_CONTROL_TRANSFER_DYNAMIC_RELOCATION
+    PIMAGE_INDIR_CONTROL_TRANSFER_DYNAMIC_RELOCATION: TypeAlias = __cs__.Pointer[
+        _c_pe._IMAGE_INDIR_CONTROL_TRANSFER_DYNAMIC_RELOCATION
+    ]
     class _IMAGE_SWITCHTABLE_BRANCH_DYNAMIC_RELOCATION(__cs__.Structure):
         PageRelativeOffset: _c_pe.uint16
         RegisterNumber: _c_pe.uint16
@@ -1631,6 +1680,9 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_SWITCHTABLE_BRANCH_DYNAMIC_RELOCATION: TypeAlias = _IMAGE_SWITCHTABLE_BRANCH_DYNAMIC_RELOCATION
+    PIMAGE_SWITCHTABLE_BRANCH_DYNAMIC_RELOCATION: TypeAlias = __cs__.Pointer[
+        _c_pe._IMAGE_SWITCHTABLE_BRANCH_DYNAMIC_RELOCATION
+    ]
     class _IMAGE_FUNCTION_OVERRIDE_HEADER(__cs__.Structure):
         FuncOverrideSize: _c_pe.uint32
         @overload
@@ -1639,6 +1691,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_FUNCTION_OVERRIDE_HEADER: TypeAlias = _IMAGE_FUNCTION_OVERRIDE_HEADER
+    PIMAGE_FUNCTION_OVERRIDE_HEADER: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_FUNCTION_OVERRIDE_HEADER]
     class _IMAGE_FUNCTION_OVERRIDE_DYNAMIC_RELOCATION(__cs__.Structure):
         OriginalRva: _c_pe.uint32
         BDDOffset: _c_pe.uint32
@@ -1656,6 +1709,9 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_FUNCTION_OVERRIDE_DYNAMIC_RELOCATION: TypeAlias = _IMAGE_FUNCTION_OVERRIDE_DYNAMIC_RELOCATION
+    PIMAGE_FUNCTION_OVERRIDE_DYNAMIC_RELOCATION: TypeAlias = __cs__.Pointer[
+        _c_pe._IMAGE_FUNCTION_OVERRIDE_DYNAMIC_RELOCATION
+    ]
     class _IMAGE_BDD_INFO(__cs__.Structure):
         Version: _c_pe.uint32
         BDDSize: _c_pe.uint32
@@ -1665,6 +1721,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_BDD_INFO: TypeAlias = _IMAGE_BDD_INFO
+    PIMAGE_BDD_INFO: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_BDD_INFO]
     class _IMAGE_BDD_DYNAMIC_RELOCATION(__cs__.Structure):
         Left: _c_pe.uint16
         Right: _c_pe.uint16
@@ -1677,6 +1734,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_BDD_DYNAMIC_RELOCATION: TypeAlias = _IMAGE_BDD_DYNAMIC_RELOCATION
+    PIMAGE_BDD_DYNAMIC_RELOCATION: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_BDD_DYNAMIC_RELOCATION]
     class IMAGE_GUARD(__cs__.Flag):
         CF_INSTRUMENTED = ...
         CFW_INSTRUMENTED = ...
@@ -1805,6 +1863,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_LOAD_CONFIG_DIRECTORY32: TypeAlias = _IMAGE_LOAD_CONFIG_DIRECTORY32
+    PIMAGE_LOAD_CONFIG_DIRECTORY32: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_LOAD_CONFIG_DIRECTORY32]
     class _IMAGE_LOAD_CONFIG_DIRECTORY64(__cs__.Structure):
         Size: _c_pe.uint32
         TimeDateStamp: _c_pe.uint32
@@ -1914,6 +1973,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_LOAD_CONFIG_DIRECTORY64: TypeAlias = _IMAGE_LOAD_CONFIG_DIRECTORY64
+    PIMAGE_LOAD_CONFIG_DIRECTORY64: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_LOAD_CONFIG_DIRECTORY64]
     class _IMAGE_CHPE_METADATA_X86(__cs__.Structure):
         Version: _c_pe.uint32
         CHPECodeAddressRangeOffset: _c_pe.uint32
@@ -1947,6 +2007,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_CHPE_METADATA_X86: TypeAlias = _IMAGE_CHPE_METADATA_X86
+    PIMAGE_CHPE_METADATA_X86: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_CHPE_METADATA_X86]
     class _IMAGE_CHPE_RANGE_ENTRY(__cs__.Structure):
         StartOffset: _c_pe.uint32
         NativeCode: _c_pe.uint32
@@ -1964,6 +2025,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_CHPE_RANGE_ENTRY: TypeAlias = _IMAGE_CHPE_RANGE_ENTRY
+    PIMAGE_CHPE_RANGE_ENTRY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_CHPE_RANGE_ENTRY]
     class _IMAGE_ARM64EC_METADATA(__cs__.Structure):
         Version: _c_pe.uint32
         CodeMap: _c_pe.uint32
@@ -2013,6 +2075,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ARM64EC_METADATA: TypeAlias = _IMAGE_ARM64EC_METADATA
+    PIMAGE_ARM64EC_METADATA: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_ARM64EC_METADATA]
     class _IMAGE_ARM64EC_METADATA_V2(__cs__.Structure):
         Version: _c_pe.uint32
         CodeMap: _c_pe.uint32
@@ -2068,6 +2131,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ARM64EC_METADATA_V2: TypeAlias = _IMAGE_ARM64EC_METADATA_V2
+    PIMAGE_ARM64EC_METADATA_V2: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_ARM64EC_METADATA_V2]
     class _IMAGE_ARM64EC_REDIRECTION_ENTRY(__cs__.Structure):
         Source: _c_pe.uint32
         Destination: _c_pe.uint32
@@ -2077,6 +2141,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ARM64EC_REDIRECTION_ENTRY: TypeAlias = _IMAGE_ARM64EC_REDIRECTION_ENTRY
+    PIMAGE_ARM64EC_REDIRECTION_ENTRY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_ARM64EC_REDIRECTION_ENTRY]
     class _IMAGE_ARM64EC_CODE_RANGE_ENTRY_POINT(__cs__.Structure):
         StartRva: _c_pe.uint32
         EndRva: _c_pe.uint32
@@ -2092,6 +2157,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ARM64EC_CODE_RANGE_ENTRY_POINT: TypeAlias = _IMAGE_ARM64EC_CODE_RANGE_ENTRY_POINT
+    PIMAGE_ARM64EC_CODE_RANGE_ENTRY_POINT: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_ARM64EC_CODE_RANGE_ENTRY_POINT]
     class _IMAGE_DVRT_ARM64X_FIXUP_RECORD(__cs__.Structure):
         Offset: _c_pe.uint16
         Type: _c_pe.uint16
@@ -2104,6 +2170,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_DVRT_ARM64X_FIXUP_RECORD: TypeAlias = _IMAGE_DVRT_ARM64X_FIXUP_RECORD
+    PIMAGE_DVRT_ARM64X_FIXUP_RECORD: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_DVRT_ARM64X_FIXUP_RECORD]
     class _IMAGE_DVRT_ARM64X_DELTA_FIXUP_RECORD(__cs__.Structure):
         Offset: _c_pe.uint16
         Type: _c_pe.uint16
@@ -2121,6 +2188,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_DVRT_ARM64X_DELTA_FIXUP_RECORD: TypeAlias = _IMAGE_DVRT_ARM64X_DELTA_FIXUP_RECORD
+    PIMAGE_DVRT_ARM64X_DELTA_FIXUP_RECORD: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_DVRT_ARM64X_DELTA_FIXUP_RECORD]
     class _IMAGE_HOT_PATCH_INFO(__cs__.Structure):
         Version: _c_pe.uint32
         Size: _c_pe.uint32
@@ -2148,6 +2216,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_HOT_PATCH_INFO: TypeAlias = _IMAGE_HOT_PATCH_INFO
+    PIMAGE_HOT_PATCH_INFO: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_HOT_PATCH_INFO]
     class _IMAGE_HOT_PATCH_BASE(__cs__.Structure):
         SequenceNumber: _c_pe.uint32
         Flags: _c_pe.uint32
@@ -2173,6 +2242,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_HOT_PATCH_BASE: TypeAlias = _IMAGE_HOT_PATCH_BASE
+    PIMAGE_HOT_PATCH_BASE: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_HOT_PATCH_BASE]
     class _IMAGE_HOT_PATCH_MACHINE(__cs__.Structure):
         _x86: _c_pe.uint32
         Amd64: _c_pe.uint32
@@ -2190,6 +2260,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_HOT_PATCH_MACHINE: TypeAlias = _IMAGE_HOT_PATCH_MACHINE
+    PIMAGE_HOT_PATCH_MACHINE: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_HOT_PATCH_MACHINE]
     class _IMAGE_HOT_PATCH_HASHES(__cs__.Structure):
         SHA256: __cs__.Array[_c_pe.uint8]
         SHA1: __cs__.Array[_c_pe.uint8]
@@ -2201,6 +2272,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_HOT_PATCH_HASHES: TypeAlias = _IMAGE_HOT_PATCH_HASHES
+    PIMAGE_HOT_PATCH_HASHES: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_HOT_PATCH_HASHES]
     class IMAGE_HOT_PATCH(__cs__.Enum):
         NONE = ...
         FUNCTION = ...
@@ -2230,6 +2302,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_CE_RUNTIME_FUNCTION_ENTRY: TypeAlias = _IMAGE_CE_RUNTIME_FUNCTION_ENTRY
+    PIMAGE_CE_RUNTIME_FUNCTION_ENTRY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_CE_RUNTIME_FUNCTION_ENTRY]
     class _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY(__cs__.Structure):
         BeginAddress: _c_pe.uint32
         UnwindData: _c_pe.uint32
@@ -2261,6 +2334,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ARM_RUNTIME_FUNCTION_ENTRY: TypeAlias = _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY
+    PIMAGE_ARM_RUNTIME_FUNCTION_ENTRY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_ARM_RUNTIME_FUNCTION_ENTRY]
     class ARM64_FNPDATA_FLAGS(__cs__.Enum):
         PdataRefToFullXdata = ...
         PdataPackedUnwindFunction = ...
@@ -2299,6 +2373,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY: TypeAlias = _IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY
+    PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY]
     class _IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA(__cs__.Union):
         HeaderData: _c_pe.uint32
         FunctionLength: _c_pe.uint32
@@ -2322,6 +2397,9 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA: TypeAlias = _IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA
+    PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA: TypeAlias = __cs__.Pointer[
+        _c_pe._IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA
+    ]
     class IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EXTENDED(__cs__.Union):
         ExtendedHeaderData: _c_pe.uint32
         ExtendedEpilogCount: _c_pe.uint32
@@ -2336,6 +2414,9 @@ class _c_pe(__cs__.cstruct):
         @overload
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
+    PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EXTENDED: TypeAlias = __cs__.Pointer[
+        _c_pe.IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EXTENDED
+    ]
     class IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EPILOG_SCOPE(__cs__.Union):
         EpilogScopeData: _c_pe.uint32
         EpilogStartOffset: _c_pe.uint32
@@ -2352,6 +2433,9 @@ class _c_pe(__cs__.cstruct):
         @overload
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
+    PIMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EPILOG_SCOPE: TypeAlias = __cs__.Pointer[
+        _c_pe.IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA_EPILOG_SCOPE
+    ]
     class _IMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY(__cs__.Structure):
         BeginAddress: _c_pe.uint64
         EndAddress: _c_pe.uint64
@@ -2371,6 +2455,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY: TypeAlias = _IMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY
+    PIMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_ALPHA64_RUNTIME_FUNCTION_ENTRY]
     class _IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY(__cs__.Structure):
         BeginAddress: _c_pe.uint32
         EndAddress: _c_pe.uint32
@@ -2390,6 +2475,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY: TypeAlias = _IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY
+    PIMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_ALPHA_RUNTIME_FUNCTION_ENTRY]
     class _IMAGE_MIPS_RUNTIME_FUNCTION_ENTRY(__cs__.Structure):
         BeginAddress: _c_pe.uint32
         EndAddress: _c_pe.uint32
@@ -2409,6 +2495,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_MIPS_RUNTIME_FUNCTION_ENTRY: TypeAlias = _IMAGE_MIPS_RUNTIME_FUNCTION_ENTRY
+    PIMAGE_MIPS_RUNTIME_FUNCTION_ENTRY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_MIPS_RUNTIME_FUNCTION_ENTRY]
     class _IMAGE_RUNTIME_FUNCTION_ENTRY(__cs__.Structure):
         BeginAddress: _c_pe.uint32
         EndAddress: _c_pe.uint32
@@ -2426,6 +2513,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_RUNTIME_FUNCTION_ENTRY: TypeAlias = _IMAGE_RUNTIME_FUNCTION_ENTRY
+    PIMAGE_RUNTIME_FUNCTION_ENTRY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_RUNTIME_FUNCTION_ENTRY]
     class _IMAGE_ENCLAVE_CONFIG32(__cs__.Structure):
         Size: _c_pe.uint32
         MinimumRequiredConfigSize: _c_pe.uint32
@@ -2461,6 +2549,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ENCLAVE_CONFIG32: TypeAlias = _IMAGE_ENCLAVE_CONFIG32
+    PIMAGE_ENCLAVE_CONFIG32: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_ENCLAVE_CONFIG32]
     class _IMAGE_ENCLAVE_CONFIG64(__cs__.Structure):
         Size: _c_pe.uint32
         MinimumRequiredConfigSize: _c_pe.uint32
@@ -2496,6 +2585,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ENCLAVE_CONFIG64: TypeAlias = _IMAGE_ENCLAVE_CONFIG64
+    PIMAGE_ENCLAVE_CONFIG64: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_ENCLAVE_CONFIG64]
     class _IMAGE_ENCLAVE_IMPORT(__cs__.Structure):
         MatchType: _c_pe.uint32
         MinimumSecurityVersion: _c_pe.uint32
@@ -2519,6 +2609,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ENCLAVE_IMPORT: TypeAlias = _IMAGE_ENCLAVE_IMPORT
+    PIMAGE_ENCLAVE_IMPORT: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_ENCLAVE_IMPORT]
     class WIN_CERT_TYPE(__cs__.Enum):
         X509 = ...
         PKCS_SIGNED_DATA = ...
@@ -2542,6 +2633,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     WIN_CERTIFICATE: TypeAlias = _WIN_CERTIFICATE
+    PWIN_CERTIFICATE: TypeAlias = __cs__.Pointer[_c_pe._WIN_CERTIFICATE]
     class IMAGE_DEBUG_TYPE(__cs__.Enum):
         UNKNOWN = ...
         COFF = ...
@@ -2602,6 +2694,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_DEBUG_DIRECTORY: TypeAlias = _IMAGE_DEBUG_DIRECTORY
+    PIMAGE_DEBUG_DIRECTORY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_DEBUG_DIRECTORY]
     class _IMAGE_COFF_SYMBOLS_HEADER(__cs__.Structure):
         NumberOfSymbols: _c_pe.uint32
         LvaToFirstSymbol: _c_pe.uint32
@@ -2627,6 +2720,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_COFF_SYMBOLS_HEADER: TypeAlias = _IMAGE_COFF_SYMBOLS_HEADER
+    PIMAGE_COFF_SYMBOLS_HEADER: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_COFF_SYMBOLS_HEADER]
     class _CV_HEADER(__cs__.Structure):
         Signature: _c_pe.uint32
         Offset: _c_pe.uint32
@@ -2636,6 +2730,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     CV_HEADER: TypeAlias = _CV_HEADER
+    PCV_HEADER: TypeAlias = __cs__.Pointer[_c_pe._CV_HEADER]
     class _CV_INFO_PDB20(__cs__.Structure):
         CvHeader: _c_pe._CV_HEADER
         Signature: _c_pe.uint32
@@ -2653,6 +2748,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     CV_INFO_PDB20: TypeAlias = _CV_INFO_PDB20
+    PCV_INFO_PDB20: TypeAlias = __cs__.Pointer[_c_pe._CV_INFO_PDB20]
     class _CV_INFO_PDB70(__cs__.Structure):
         CvSignature: _c_pe.uint32
         Signature: __cs__.CharArray
@@ -2670,6 +2766,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     CV_INFO_PDB70: TypeAlias = _CV_INFO_PDB70
+    PCV_INFO_PDB70: TypeAlias = __cs__.Pointer[_c_pe._CV_INFO_PDB70]
     class _CV_INFO_MTOC(__cs__.Structure):
         CvSignature: _c_pe.uint32
         Signature: __cs__.Array[_c_pe.uint8]
@@ -2685,6 +2782,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     CV_INFO_MTOC: TypeAlias = _CV_INFO_MTOC
+    PCV_INFO_MTOC: TypeAlias = __cs__.Pointer[_c_pe._CV_INFO_MTOC]
     class _FPO_DATA(__cs__.Structure):
         ulOffStart: _c_pe.uint32
         cbProcSize: _c_pe.uint32
@@ -2714,6 +2812,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     FPO_DATA: TypeAlias = _FPO_DATA
+    PFPO_DATA: TypeAlias = __cs__.Pointer[_c_pe._FPO_DATA]
     class _IMAGE_DEBUG_MISC(__cs__.Structure):
         DataType: _c_pe.uint32
         Length: _c_pe.uint32
@@ -2731,6 +2830,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_DEBUG_MISC: TypeAlias = _IMAGE_DEBUG_MISC
+    PIMAGE_DEBUG_MISC: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_DEBUG_MISC]
     class _VC_FEATURE(__cs__.Structure):
         PreVC11: _c_pe.uint32
         CCpp: _c_pe.uint32
@@ -2750,6 +2850,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     VC_FEATURE: TypeAlias = _VC_FEATURE
+    PVC_FEATURE: TypeAlias = __cs__.Pointer[_c_pe._VC_FEATURE]
     class _IMAGE_FUNCTION_ENTRY(__cs__.Structure):
         StartingAddress: _c_pe.uint32
         EndingAddress: _c_pe.uint32
@@ -2765,6 +2866,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_FUNCTION_ENTRY: TypeAlias = _IMAGE_FUNCTION_ENTRY
+    PIMAGE_FUNCTION_ENTRY: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_FUNCTION_ENTRY]
     class _IMAGE_FUNCTION_ENTRY64(__cs__.Structure):
         StartingAddress: _c_pe.uint64
         EndingAddress: _c_pe.uint64
@@ -2782,6 +2884,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_FUNCTION_ENTRY64: TypeAlias = _IMAGE_FUNCTION_ENTRY64
+    PIMAGE_FUNCTION_ENTRY64: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_FUNCTION_ENTRY64]
     class _IMAGE_SEPARATE_DEBUG_HEADER(__cs__.Structure):
         Signature: _c_pe.uint16
         Flags: _c_pe.uint16
@@ -2817,6 +2920,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_SEPARATE_DEBUG_HEADER: TypeAlias = _IMAGE_SEPARATE_DEBUG_HEADER
+    PIMAGE_SEPARATE_DEBUG_HEADER: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_SEPARATE_DEBUG_HEADER]
     class _NON_PAGED_DEBUG_INFO(__cs__.Structure):
         Signature: _c_pe.uint16
         Flags: _c_pe.uint16
@@ -2844,6 +2948,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     NON_PAGED_DEBUG_INFO: TypeAlias = _NON_PAGED_DEBUG_INFO
+    PNON_PAGED_DEBUG_INFO: TypeAlias = __cs__.Pointer[_c_pe._NON_PAGED_DEBUG_INFO]
     class _ImageArchitectureHeader(__cs__.Structure):
         AmaskValue: _c_pe.uint32
         _: _c_pe.int32
@@ -2861,6 +2966,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ARCHITECTURE_HEADER: TypeAlias = _ImageArchitectureHeader
+    PIMAGE_ARCHITECTURE_HEADER: TypeAlias = __cs__.Pointer[_c_pe._ImageArchitectureHeader]
     class _ImageArchitectureEntry(__cs__.Structure):
         FixupInstRVA: _c_pe.uint32
         NewInst: _c_pe.uint32
@@ -2870,6 +2976,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_ARCHITECTURE_ENTRY: TypeAlias = _ImageArchitectureEntry
+    PIMAGE_ARCHITECTURE_ENTRY: TypeAlias = __cs__.Pointer[_c_pe._ImageArchitectureEntry]
     class IMPORT_OBJECT_TYPE(__cs__.Enum):
         IMPORT_OBJECT_CODE = ...
         IMPORT_OBJECT_DATA = ...
@@ -2912,6 +3019,7 @@ class _c_pe(__cs__.cstruct):
         @overload
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
+    PIMPORT_OBJECT_HEADER: TypeAlias = __cs__.Pointer[_c_pe.IMPORT_OBJECT_HEADER]
     class COMIMAGE_FLAGS(__cs__.Flag):
         ILONLY = ...
         "32BITREQUIRED = ..."
@@ -2956,6 +3064,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_COR20_HEADER: TypeAlias = _IMAGE_COR20_HEADER
+    PIMAGE_COR20_HEADER: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_COR20_HEADER]
     class _IMAGE_COR20_METADATA(__cs__.Structure):
         Magic: _c_pe.uint32
         MajorVersion: _c_pe.uint16
@@ -2981,6 +3090,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_COR20_METADATA: TypeAlias = _IMAGE_COR20_METADATA
+    PIMAGE_COR20_METADATA: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_COR20_METADATA]
     class _IMAGE_COR20_STREAM_HEADER(__cs__.Structure):
         Offset: _c_pe.uint32
         Size: _c_pe.uint32
@@ -2996,6 +3106,7 @@ class _c_pe(__cs__.cstruct):
         def __init__(self, fh: bytes | memoryview | bytearray | BinaryIO, /): ...
 
     IMAGE_COR20_STREAM_HEADER: TypeAlias = _IMAGE_COR20_STREAM_HEADER
+    PIMAGE_COR20_STREAM_HEADER: TypeAlias = __cs__.Pointer[_c_pe._IMAGE_COR20_STREAM_HEADER]
 
 # Technically `c_pe` is an instance of `_c_pe`, but then we can't use it in type hints
 c_pe: TypeAlias = _c_pe
