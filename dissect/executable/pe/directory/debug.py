@@ -100,17 +100,17 @@ class CodeViewDebugEntry(DebugEntry):
         return f"<CodeViewDebugEntry signature={self.signature} pdb={self.pdb!r}>"
 
     @cached_property
-    def info(self) -> c_pe.CV_INFO_PDB20 | c_pe.CV_INFO_PDB70:
+    def info(self) -> c_pe.CV_INFO_PDB20 | c_pe.CV_INFO_PDB70 | c_pe.CV_INFO_MTOC:
         """The CodeView debug information."""
         with self.open() as fh:
             cv_signature = c_pe.ULONG(fh)
             fh.seek(0)
 
-            if cv_signature == c_pe.CVINFO_PDB70_CVSIGNATURE:
-                return c_pe.CV_INFO_PDB70(fh)
-
             if cv_signature == c_pe.CVINFO_PDB20_CVSIGNATURE:
                 return c_pe.CV_INFO_PDB20(fh)
+
+            if cv_signature == c_pe.CVINFO_PDB70_CVSIGNATURE:
+                return c_pe.CV_INFO_PDB70(fh)
 
             if cv_signature == c_pe.CVINFO_MTOC_CVSIGNATURE:
                 return c_pe.CV_INFO_MTOC(fh)
@@ -236,7 +236,7 @@ class ReproDebugEntry(DebugEntry):
             return fh.read(hash_size)
 
 
-_DEBUG_TYPE_MAP = {
+_DEBUG_TYPE_MAP: dict[c_pe.IMAGE_DEBUG_TYPE, type[DebugEntry]] = {
     c_pe.IMAGE_DEBUG_TYPE.CODEVIEW: CodeViewDebugEntry,
     c_pe.IMAGE_DEBUG_TYPE.VC_FEATURE: VcFeatureDebugEntry,
     c_pe.IMAGE_DEBUG_TYPE.POGO: PogoDebugEntry,
