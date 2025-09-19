@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "dissect.executable"
 description = "A Dissect module implementing a parsers for various executable formats such as PE, ELF and Macho-O"
 readme = "README.md"
-requires-python = "~=3.9"
+requires-python = ">=3.10"
 license = "AGPL-3.0-or-later"
 license-files = ["LICENSE", "COPYRIGHT"]
 authors = [
