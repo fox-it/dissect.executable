@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import cached_property
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, BinaryIO, Union
+from typing import TYPE_CHECKING, Any, BinaryIO
 
 from dissect.util.ts import from_unix, wintimestamp
 
@@ -268,7 +268,7 @@ class ResourceDirectory(DataDirectory):
         if len(version) != 1:
             raise ValueError(f"Expected exactly one version resource, found {len(version)}")
 
-        _Node: TypeAlias = tuple[str, Union[str, bytes, None], list["_Node"]]
+        _Node: TypeAlias = tuple[str, str | bytes | None, list["_Node"]]
 
         def _parse_lvt(fh: BinaryIO) -> _Node | None:
             start = fh.tell()

@@ -126,7 +126,7 @@ class DelayImportModule:
         return [
             DelayImportFunction(self, name_thunk, address_thunk, bound_thunk, unload_thunk)
             for name_thunk, address_thunk, bound_thunk, unload_thunk in zip(
-                name_table, address_table, bound_table, unload_table
+                name_table, address_table, bound_table, unload_table, strict=False
             )
         ]
 

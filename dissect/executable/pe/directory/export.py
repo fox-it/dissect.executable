@@ -79,7 +79,7 @@ class ExportDirectory(DataDirectory):
         self.pe.vfh.seek(self.header.AddressOfNameOrdinals)
         ordinals = c_pe.USHORT[self.header.NumberOfNames](self.pe.vfh)
 
-        for name_ptr, ordinal in zip(names, ordinals):
+        for name_ptr, ordinal in zip(names, ordinals, strict=False):
             self.pe.vfh.seek(name_ptr)
             name = c_pe.CHAR[None](self.pe.vfh).decode()
 

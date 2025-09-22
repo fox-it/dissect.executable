@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 from functools import cached_property, lru_cache
 from operator import itemgetter
-from typing import TYPE_CHECKING, BinaryIO, Callable, Generic, TypeVar
+from typing import TYPE_CHECKING, BinaryIO, Generic, TypeVar
 
 from dissect.executable.elf.c_elf import (
     SHN,
@@ -19,7 +19,7 @@ from dissect.executable.elf.c_elf import (
 from dissect.executable.exception import InvalidSignatureError
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     from dissect.cstruct import cstruct
 

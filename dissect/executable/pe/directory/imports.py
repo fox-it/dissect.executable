@@ -108,7 +108,7 @@ class ImportModule:
 
         return [
             ImportFunction(self, lookup_thunk, address_thunk)
-            for lookup_thunk, address_thunk in zip(lookup_table, address_table)
+            for lookup_thunk, address_thunk in zip(lookup_table, address_table, strict=False)
         ]
 
     @cached_property
