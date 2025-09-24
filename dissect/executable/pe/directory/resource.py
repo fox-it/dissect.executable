@@ -2,18 +2,10 @@ from __future__ import annotations
 
 from functools import cached_property
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, BinaryIO
-
-from dissect.util.ts import from_unix, wintimestamp
-
-try:
-    from typing import TypeAlias  # novermin
-except ImportError:
-    # COMPAT: Remove this when we drop Python 3.9
-    TypeAlias = Any
-
+from typing import TYPE_CHECKING, Any, BinaryIO, TypeAlias
 
 from dissect.util.stream import RangeStream
+from dissect.util.ts import from_unix, wintimestamp
 
 from dissect.executable.pe.c_pe import c_pe
 from dissect.executable.pe.directory.base import DataDirectory
