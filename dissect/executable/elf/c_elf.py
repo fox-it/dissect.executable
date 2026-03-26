@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from enum import Flag, IntEnum
+from typing import TYPE_CHECKING
 
 from dissect.cstruct import cstruct
+
+if TYPE_CHECKING:
+    from enum import Flag, IntEnum
 
 elf_32_def = """
 typedef uint32      Elf32_Addr;
