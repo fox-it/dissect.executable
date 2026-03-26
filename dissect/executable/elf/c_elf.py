@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import Flag, IntEnum
 
 from dissect.cstruct import cstruct
