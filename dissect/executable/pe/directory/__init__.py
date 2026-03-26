@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dissect.executable.pe.directory.base import DataDirectory
 from dissect.executable.pe.directory.basereloc import BaseRelocationDirectory
 from dissect.executable.pe.directory.bound_import import BoundImportDirectory

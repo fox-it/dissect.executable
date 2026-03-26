@@ -5,7 +5,7 @@ from bisect import bisect_right
 from functools import cached_property
 from typing import TYPE_CHECKING, BinaryIO
 
-from dissect.util.stream import AlignedStream, BufferedStream, RangeStream
+from dissect.util.stream import AlignedStream, BufferedStream
 from dissect.util.ts import from_unix
 
 from dissect.executable.exception import InvalidSignatureError
@@ -29,6 +29,8 @@ from dissect.executable.pe.directory import (
 
 if TYPE_CHECKING:
     import datetime
+
+    from dissect.util.stream import RangeStream
 
 
 class PE:
