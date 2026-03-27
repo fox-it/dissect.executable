@@ -4,3 +4,5 @@
 #
 # Change linter to Ruff (#26)
 367766f11f5729a33d978922893b68635eccb742
+# Add stricter Ruff linting (#35)
+b113b0738162bc133bc582b34c37f60fa841e205
