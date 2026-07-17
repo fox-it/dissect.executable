@@ -493,14 +493,14 @@ typedef struct _IMAGE_BASE_RELOCATION {
 //
 
 #define IMAGE_ARCHIVE_START_SIZE             8
-#define IMAGE_ARCHIVE_START                  b"!<arch>\n"
-#define IMAGE_ARCHIVE_END                    b"`\n"
-#define IMAGE_ARCHIVE_PAD                    b"\n"
+#define IMAGE_ARCHIVE_START                  b"!<arch>\\n"
+#define IMAGE_ARCHIVE_END                    b"`\\n"
+#define IMAGE_ARCHIVE_PAD                    b"\\n"
 #define IMAGE_ARCHIVE_LINKER_MEMBER          b"/               "
 #define IMAGE_ARCHIVE_LONGNAMES_MEMBER       b"//              "
 
 typedef struct _IMAGE_ARCHIVE_MEMBER_HEADER {
-    CHAR        Name[16];                       // File member name - `/' terminated.
+    CHAR        Name[16];                       // File member name - '/' terminated.
     CHAR        Date[12];                       // File member date - decimal.
     CHAR        UserID[6];                      // File member user id - decimal.
     CHAR        GroupID[6];                     // File member group id - decimal.

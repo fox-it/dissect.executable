@@ -296,8 +296,8 @@ enum SHN : uint16 {
     LOPROC              = 0xff00,
     HIPROC              = 0xff1f,
     LIVEPATCH           = 0xff20,
-    ABS                 = 0xfff1
-    COMMON              = 0xfff2
+    ABS                 = 0xfff1,
+    COMMON              = 0xfff2,
     HIRESERVE           = 0xffff
 };
 
@@ -394,21 +394,12 @@ enum SHN : uint16 {
 #define NT_VMCOREDD         0x700       /* Vmcore Device Dump Note */
 #define NT_MIPS_DSP         0x800       /* MIPS DSP ASE registers */
 #define NT_MIPS_FP_MODE     0x801       /* MIPS floating-point mode */
-
 """
 
 
-def copy_cstruct(src_struct: cstruct) -> cstruct:
-    dst_struct = cstruct()
-    dst_struct.consts = src_struct.consts.copy()
-    dst_struct.typedefs = src_struct.typedefs.copy()
-    dst_struct.lookups = src_struct.lookups.copy()
-    return dst_struct
-
-
 c_common_elf = cstruct().load(elf_def)
-c_elf_32 = copy_cstruct(c_common_elf).load(elf_32_def)
-c_elf_64 = copy_cstruct(c_common_elf).load(elf_64_def)
+c_elf_32 = c_common_elf.copy().load(elf_32_def)
+c_elf_64 = c_common_elf.copy().load(elf_64_def)
 
 PT: IntEnum = c_common_elf.PT
 Elf_Type: IntEnum = c_common_elf.Elf_Type
