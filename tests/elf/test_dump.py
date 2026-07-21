@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     "path",
     [
-        "_data/elf/hello_world.out",
-        "_data/elf/hello_world.stripped.out",
+        "_data/elf/hello_world-x86_64.bin",
+        "_data/elf/hello_world-x86_64-stripped.bin",
     ],
 )
 def test_dump(path: str, tmp_path: Path) -> None:
