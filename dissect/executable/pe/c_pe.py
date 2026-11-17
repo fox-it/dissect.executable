@@ -1785,6 +1785,9 @@ typedef struct _IMAGE_RUNTIME_FUNCTION_ENTRY {
 // Sofware enclave information
 //
 
+#define ENCLAVE_LONG_ID_LENGTH                  32
+#define ENCLAVE_SHORT_ID_LENGTH                 16
+
 #define IMAGE_ENCLAVE_LONG_ID_LENGTH            ENCLAVE_LONG_ID_LENGTH
 #define IMAGE_ENCLAVE_SHORT_ID_LENGTH           ENCLAVE_SHORT_ID_LENGTH
 
