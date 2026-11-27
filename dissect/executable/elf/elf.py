@@ -14,7 +14,9 @@ from dissect.executable.elf.c_elf import (
     Elf_Type,
     c_common_elf,
     c_elf_32,
+    c_elf_32_be,
     c_elf_64,
+    c_elf_64_be,
 )
 from dissect.executable.exception import InvalidSignatureError
 
@@ -36,14 +38,14 @@ class ELF:
                 f"Invalid ELF header magic, expected {c_common_elf.ELFMAG!r}, got {self.e_ident[:4]!r}"
             )
 
-        c_elf_version = c_elf_32
-        if self.e_ident[c_common_elf.EI_CLASS] == c_common_elf.ELFCLASS64:
-            c_elf_version = c_elf_64
-        self.c_elf = c_elf_version
-
-        # Determine endianess interpretation of bytes. This matters after the first 16 bytes.
+        # The class and endianness matter after the first 16 bytes. Pick the instance for them instead of changing the
+        # endianness of a shared one, which would also affect other ELF files that are open at the same time.
+        is_64 = self.e_ident[c_common_elf.EI_CLASS] == c_common_elf.ELFCLASS64
         is_little = self.e_ident[c_common_elf.EI_DATA] == c_common_elf.ELFDATA2LSB
-        self.c_elf.endian = "<" if is_little else ">"
+        if is_64:
+            self.c_elf = c_elf_64 if is_little else c_elf_64_be
+        else:
+            self.c_elf = c_elf_32 if is_little else c_elf_32_be
 
         fh.seek(0)
         self.header = self.c_elf.Ehdr(fh)

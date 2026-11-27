@@ -398,8 +398,32 @@ enum SHN : uint16 {
 
 
 c_common_elf = cstruct().load(elf_def)
-c_elf_32 = c_common_elf.copy().load(elf_32_def)
-c_elf_64 = c_common_elf.copy().load(elf_64_def)
+
+
+def _make_elf_cstruct(definition: str, endian: str) -> cstruct:
+    """Make a ``cstruct`` instance for one ELF class and endianness, with the definitions of ``c_common_elf``.
+
+    The enums and flags are the same classes as those of ``c_common_elf``, not copies. Members of enums from different
+    ``cstruct`` instances never compare equal, so ``section.type == SHT.SYMTAB`` would always be ``False`` otherwise.
+    """
+    cs = cstruct(endian=endian)
+    for name, value in c_common_elf.consts.items():
+        cs.add_const(name, value)
+
+    builtin_types = cstruct().types
+    for name, type_ in c_common_elf.types.items():
+        if name not in builtin_types:
+            cs.add_type(name, type_)
+
+    return cs.load(definition)
+
+
+# Every combination of ELF class and endianness has its own instance. Changing the endianness of a shared instance
+# would also change it for every other ELF file that is open at the same time, because their entries are read lazily.
+c_elf_32 = _make_elf_cstruct(elf_32_def, "<")
+c_elf_64 = _make_elf_cstruct(elf_64_def, "<")
+c_elf_32_be = _make_elf_cstruct(elf_32_def, ">")
+c_elf_64_be = _make_elf_cstruct(elf_64_def, ">")
 
 PT: IntEnum = c_common_elf.PT
 Elf_Type: IntEnum = c_common_elf.Elf_Type
